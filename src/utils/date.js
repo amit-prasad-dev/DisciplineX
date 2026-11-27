@@ -112,6 +112,38 @@ export function getWeekdayKeyFromDateKey(dateKey) {
 }
 
 /**
+ * Return a YYYY-MM-DD local date key for `date` in `timeZone` using
+ * Intl.DateTimeFormat.formatToParts (year, month, and day parts only).
+ */
+export function getLocalDateKey(
+  date = new Date(),
+  timeZone = DEFAULT_TIME_ZONE,
+) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+
+  let year
+  let month
+  let day
+
+  for (const part of parts) {
+    if (part.type === 'year') {
+      year = part.value
+    } else if (part.type === 'month') {
+      month = part.value
+    } else if (part.type === 'day') {
+      day = part.value
+    }
+  }
+
+  return `${year}-${month}-${day}`
+}
+
+/**
  * Format a Date for display in the specified IANA time zone using Intl.
  * Accepts a Date parameter for deterministic testing and avoids UTC slicing.
  */

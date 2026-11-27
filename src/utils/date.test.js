@@ -4,6 +4,7 @@ import {
   WEEK_START_DAY,
   WEEK_START_KEY,
   formatLocalDate,
+  getLocalDateKey,
   getWeekdayKeyFromDateKey,
   parseDateKey,
   weekdayFromJsDay,
@@ -44,6 +45,23 @@ describe('formatLocalDate', () => {
     expect(formatLocalDate(earlyUtc, 'Asia/Kolkata')).toBe(
       'Friday, November 27, 2026',
     )
+  })
+})
+
+describe('getLocalDateKey', () => {
+  it('returns YYYY-MM-DD across both sides of the Asia/Kolkata midnight boundary', () => {
+    const justBeforeIstMidnight = new Date('2026-11-26T18:29:59Z')
+    const atIstMidnight = new Date('2026-11-26T18:30:00Z')
+
+    expect(getLocalDateKey(justBeforeIstMidnight)).toBe('2026-11-26')
+    expect(getLocalDateKey(atIstMidnight)).toBe('2026-11-27')
+  })
+
+  it('uses the supplied IANA time zone without UTC date slicing', () => {
+    const lateUtc = new Date('2026-11-26T20:30:00Z')
+
+    expect(getLocalDateKey(lateUtc, 'UTC')).toBe('2026-11-26')
+    expect(getLocalDateKey(lateUtc, 'Asia/Kolkata')).toBe('2026-11-27')
   })
 })
 
