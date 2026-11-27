@@ -42,9 +42,10 @@ Initially, one individual uses the application to track personal routines, learn
 ### 5.2 Habit management
 A user can:
 - Create, view, edit, archive, and restore a habit.
-- Set a name, optional description, category, icon, frequency, target, unit, and start date.
-- Choose a daily schedule or selected weekdays.
-- Set a measurable target, such as 60 minutes or 2 problems, or use a simple completion target.
+- Set a name, optional description, category (controlled list; MVP values `Learning`, `Fitness`, `Personal`, `Health`; configurable categories may come later), icon, frequency, target, unit, optional display-only `targetTimeLabel` (meaningful only for simple-completion `boolean` habits; time verification is out of MVP scope), and start date (`startDate` is editable only while in the future).
+- Choose a daily schedule or selected weekdays (`mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`, week starting Monday).
+- Set a measurable numeric target, such as 60 minutes or 2 problems, or use a simple-completion (`boolean`) target (optionally with display-only `targetTimeLabel`).
+- Edit metadata (`name`, `description`, `category`, `icon`, `targetTimeLabel`) without versioning, or update schedule/target as an effective-dated version (`effectiveFrom` = today's local date key, replacing in place on same-day or future-`startDate` edits) without altering past history or logs.
 - Mark a scheduled habit as completed for a date.
 - Correct a completion record when an honest mistake was made.
 

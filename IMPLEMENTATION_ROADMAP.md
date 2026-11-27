@@ -31,7 +31,8 @@ Build and verify one phase at a time. Do not ask an AI coding agent to implement
 - Build create/edit/archive forms.
 - Add frequency and target configuration.
 - Add validation and reusable habit components.
-- Initially use a controlled mock/service layer if necessary.
+- Store habits in memory only during Phase 3 (no persistence; Firestore integration comes in Phase 5).
+- Support controlled MVP categories (`Learning`, `Fitness`, `Personal`, `Health`), Monday-first weekday keys (`mon`–`sun`), display-only `targetTimeLabel` for `boolean`-target habits, and effective-dated versions on schedule/target edits.
 
 **Exit criteria:** Habit CRUD UI and validation work.
 

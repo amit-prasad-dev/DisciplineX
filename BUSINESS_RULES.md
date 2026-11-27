@@ -6,8 +6,9 @@ This document is the source of truth for progress calculations. UI labels and ch
 
 - A day is interpreted in the user's configured time zone.
 - Daily keys use `YYYY-MM-DD`.
+- Weekdays use text keys `'mon'`, `'tue'`, `'wed'`, `'thu'`, `'fri'`, `'sat'`, `'sun'` with the week starting on Monday, defined in one ordered constant with one centralized helper converting from JavaScript `Date.getDay()`.
 - The app must not silently switch a record to the previous/next day because the browser uses UTC.
-- A habit is scheduled on a date only if the date is on/after its effective start date, on/before its effective end date (if any), and matches its frequency.
+- A habit is scheduled on a date only if the date is on/after `startDate`, on/before `endDate` (if any), and matches the schedule of the latest habit version where `effectiveFrom <= date`.
 
 ## 2. Daily habit states
 
@@ -50,7 +51,11 @@ The longest streak is the highest number of consecutive completed scheduled oppo
 ## 6. Habit edits and archives
 
 - Renaming a habit must not rewrite historical name snapshots.
-- Changing target or schedule must have an effective date and must not silently alter earlier calculations.
+- Changing only `name`, `description`, `category`, `icon`, or `targetTimeLabel` updates the habit in place and does not create a new version.
+- Changing schedule (`frequencyType` / `scheduledWeekdays`) or target (`targetType` / `targetValue` / `targetUnit`) uses `effectiveFrom` equal to today's local date key (`YYYY-MM-DD`; no backdating and no future `effectiveFrom` in MVP). If `effectiveFrom` equals the latest version's `effectiveFrom`, or if `startDate` is in the future, that version is replaced in place; otherwise a new effective-dated version is added while earlier versions remain intact. Today's evaluation uses the new version (today is still open).
+- `startDate` is editable only while it is in the future (read-only after it has passed); editing `startDate` also moves the initial version's `effectiveFrom`.
+- Any past date is evaluated using the latest version whose `effectiveFrom <= date`. Past history, logs, and streak inputs must never be rewritten by an edit.
+- Time-based habits (for example, `"Wake up early, 5:00 AM"`) use the simple-completion (`boolean`) target type plus an optional display-only `targetTimeLabel` text field (meaningful only for `boolean`-target habits). The system does not verify completion time, and a real `time` target type is out of MVP scope.
 - Archiving a habit prevents it from appearing in future active checklists.
 - Archiving must preserve all daily logs and historical analytics.
 - Deleting a habit permanently should not be offered in the MVP unless a deliberate data-deletion flow is implemented.

@@ -41,20 +41,23 @@ Path: `users/{uid}/habits/{habitId}`
 Suggested fields:
 - `name`: string, required
 - `description`: string, optional
-- `category`: string or controlled enum
+- `category`: controlled list; MVP values `Learning | Fitness | Personal | Health` (configurable categories may come later)
 - `icon`: string, optional icon key (not arbitrary executable content)
-- `frequencyType`: `daily | selected_weekdays`
-- `scheduledWeekdays`: array of weekday numbers when applicable (define 1–7 consistently)
-- `targetType`: `boolean | numeric`
-- `targetValue`: number, required for numeric targets
-- `targetUnit`: string, optional (minutes, problems, pages, etc.)
-- `startDate`: string (`YYYY-MM-DD`)
+- `targetTimeLabel`: string, optional display-only label meaningful only for `boolean`-target habits (not verified by the system; a verified `time` target type is out of MVP scope)
+- `startDate`: string (`YYYY-MM-DD`; editable only while in the future; read-only once started; editing moves the initial version's `effectiveFrom`)
 - `endDate`: string or null
 - `status`: `active | archived`
+- `versions`: non-empty array of effective-dated schedule/target versions ordered by `effectiveFrom` ascending, each containing:
+  - `effectiveFrom`: string (`YYYY-MM-DD`; initial version matches `startDate`)
+  - `frequencyType`: `daily | selected_weekdays`
+  - `scheduledWeekdays`: array of `'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'` (week starts Monday; stored via one centralized ordered constant and `Date.getDay()` conversion helper)
+  - `targetType`: `boolean | numeric`
+  - `targetValue`: number or null (required when `targetType` is `numeric`)
+  - `targetUnit`: string or null (optional for `numeric`, e.g. minutes, problems, pages)
 - `createdAt`: timestamp
 - `updatedAt`: timestamp
 
-Do not overwrite the habit's past schedule when the user changes its schedule. For the MVP, either make schedule changes effective from a chosen date and preserve schedule history, or explicitly limit schedule editing to future dates. The implementation must not silently recalculate old history using today's schedule.
+Changing `name`, `description`, `category`, `icon`, or `targetTimeLabel` updates metadata in place without creating a new version. Changing schedule (`frequencyType`, `scheduledWeekdays`) or target (`targetType`, `targetValue`, `targetUnit`) uses `effectiveFrom` equal to today's local date key (`YYYY-MM-DD`; no backdating or future `effectiveFrom` in MVP). If `effectiveFrom` matches the current latest version's `effectiveFrom`, or if `startDate` is still in the future, that version is replaced in place; otherwise a new version is appended. Today's evaluation uses the new version (today is still open), while past dates evaluate against the latest version where `effectiveFrom <= date` without rewriting prior versions or recalculating historical logs.
 
 ## 5. Daily log document
 
@@ -68,6 +71,7 @@ Suggested fields:
 - `date`: string (`YYYY-MM-DD`, user's local date)
 - `status`: `completed | missed`
 - `completedValue`: number or null
+- `targetTypeSnapshot`: `boolean | numeric`
 - `targetValueSnapshot`: number or null
 - `targetUnitSnapshot`: string or null
 - `note`: string, optional

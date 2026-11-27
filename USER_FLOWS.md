@@ -18,7 +18,7 @@ Future navigation items (Study, Fitness, Journal) should be added only when thos
 2. If authentication is enabled, user signs in.
 3. User sees an onboarding/empty dashboard.
 4. User creates their first habit.
-5. User chooses its category, schedule, target, and start date.
+5. User chooses its category (controlled list; MVP values: `Learning`, `Fitness`, `Personal`, `Health`; configurable categories may come later), schedule (daily or selected Monday–Sunday weekdays `mon`–`sun`), target (simple completion with optional display-only `targetTimeLabel` meaningful only for `boolean`-target habits, or numeric value + unit), and start date.
 6. The habit appears on the dashboard on dates when it is scheduled.
 
 ## Flow 2: Complete a habit
