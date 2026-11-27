@@ -28,9 +28,10 @@ Do not treat frontend route protection as database security. Firestore Security 
 ## 2. Frontend stack
 
 - React + Vite + JavaScript
-- Tailwind CSS
+- Tailwind CSS v4 (`@tailwindcss/vite`, configured in `src/index.css` without `tailwind.config.js`)
 - React Router
 - Lucide React
+- Vitest (unit testing) and oxlint (linting)
 - Recharts when analytics are implemented
 - Firebase JavaScript SDK
 
@@ -42,6 +43,7 @@ Use versions compatible with one another and record the installed versions in `p
 src/
   app/
     App.jsx
+    NotFoundPage.jsx
     router.jsx
   assets/
   components/

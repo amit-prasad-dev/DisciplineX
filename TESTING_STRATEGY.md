@@ -62,9 +62,9 @@ Do not rely only on UI hiding to prove data security.
 ## 6. Release checks
 
 Before each milestone:
-1. Run lint.
-2. Run relevant tests.
-3. Run production build.
+1. Run lint (`npm run lint` via `oxlint`).
+2. Run relevant tests (`npm test` via `vitest run`).
+3. Run production build (`npm run build` via `vite build`).
 4. Review browser console.
 5. Review changed files and Git diff.
 6. Record known limitations.

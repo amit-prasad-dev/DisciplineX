@@ -16,9 +16,11 @@ DisciplineX is a personal productivity and habit-tracking web application. The f
 ## Technology
 
 - React + Vite + JavaScript
-- Tailwind CSS
+- Tailwind CSS (v4 via `@tailwindcss/vite`)
 - React Router
 - Lucide React
+- Vitest (unit testing)
+- oxlint (linting)
 - Recharts (when analytics are implemented)
 - Firebase Authentication
 - Cloud Firestore
@@ -44,9 +46,16 @@ DisciplineX is a personal productivity and habit-tracking web application. The f
 
 ## Getting started
 
-The initial development phase should create the Vite application, install the agreed dependencies, establish routing, theme handling, and the reusable layout. Do not connect Firestore or implement every feature in one step.
+The initial development phase created the Vite application, installed the agreed Phase 1 dependencies, and established routing, theme handling, and the reusable layout. Firestore and feature implementations are intentionally left for later phases.
 
-Commands will be added after the project scaffold is created and verified.
+```bash
+npm install
+npm run dev      # Start local Vite dev server
+npm run lint     # Run oxlint
+npm test         # Run Vitest once (vitest run)
+npm run build    # Build production bundle to dist/
+npm run preview  # Preview the production build locally
+```
 
 ## Product principles
 
