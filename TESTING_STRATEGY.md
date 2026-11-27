@@ -34,11 +34,12 @@ Test:
 
 ## 4. Service/integration tests
 
-Where practical, use Firebase Emulator Suite for:
+Where practical, use Firebase Emulator Suite (via a separate `npm run test:rules` script using `@firebase/rules-unit-testing` so plain `npm test` does not require Java or the emulator; check the required Java version in current Firebase docs) for:
 - Authentication-dependent operations.
 - Firestore reads and writes.
 - Security Rules tests.
 - Invalid document rejection.
+- Non-allowlisted UID rejection (temporary MVP owner allowlist).
 - Cross-user access denial.
 
 Do not rely only on UI hiding to prove data security.
@@ -56,6 +57,8 @@ Do not rely only on UI hiding to prove data security.
 - [ ] Future dates are not counted as missed.
 - [ ] Challenge extension preserves previous progress.
 - [ ] Unauthenticated users cannot access private data.
+- [ ] Signed-in non-allowlisted accounts see `"This account doesn't have access yet"` and are denied by Firestore rules.
+- [ ] Signing out clears in-memory habits before the next sign-in.
 - [ ] One user cannot access another user's data.
 - [ ] Production build succeeds.
 

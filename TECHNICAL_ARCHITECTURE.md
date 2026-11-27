@@ -93,19 +93,19 @@ Current application routes: `/` (Dashboard), `/habits` (My Habits), `/habits/new
 
 Use environment variables for Firebase web-app configuration, for example `VITE_FIREBASE_API_KEY` and other required `VITE_FIREBASE_*` values.
 
-Important: Vite environment variables are included in the client bundle. Firebase web configuration is not a substitute for security. Protect data using Authentication and Firestore Security Rules. Never place service-account private keys or Admin SDK credentials in frontend environment variables.
+Important: Because this GitHub repository is public and Vite environment variables are included in the client bundle, Firebase web configuration (`VITE_FIREBASE_*`) is public by design and is not a secret. Security comes from Authentication and Firestore Security Rules. Never commit `.env` or `.env.local` files, personal email addresses, service-account keys, or any private keys, and add `.firebase/` to `.gitignore` when Firebase CLI files appear. `firebase.json` and `.firebaserc` may be committed (the project ID is not a secret).
 
-Commit an `.env.example` containing placeholder values only. Add real `.env` files to `.gitignore`.
+Commit an `.env.example` containing placeholder values only. Add real `.env` files (`.env`, `.env.local`, `.env.*`) to `.gitignore`.
 
 ## 6. Authentication and data access
 
-Although the first audience is one person, enable Firebase Authentication before connecting private Firestore data. This avoids building an insecure unauthenticated data model that must later be replaced.
+Although the first audience is one person, enable Firebase Authentication before connecting private Firestore data. Phase 4 adds sign-in/sign-out, a dedicated `/sign-in` route gating all app routes (including the Phase 2 Dashboard sample view), and `firestore.rules` (deployed only to lock the database; Phase 4 performs no Firestore reads or writes from the app). Habits stay memory-only until Phase 5, and sign-out must clear in-memory habits so one user's data never remains visible to the next sign-in.
 
-The first release may use email/password sign-in and restrict account creation operationally. Public self-registration can be enabled later after testing onboarding and abuse controls.
+The MVP uses **Google sign-in only** (`signInWithPopup`). Email/password sign-in, password reset, email-verification screens, Cloud Functions, and Identity Platform upgrades (blocking functions) are out of MVP scope. For client-side UX, the app compares the signed-in user's UID with `VITE_OWNER_UID` from `.env.local` (UX-only; `firestore.rules` is the real security boundary) and shows a neutral `"This account doesn't have access yet"` screen with a `"Sign out"` button (loading no data) when non-allowlisted. Public multi-user access can be enabled later after removing the temporary personal-use UID allowlist and reviewing onboarding and abuse controls.
 
 ## 7. Data ownership
 
-Store user data beneath `users/{uid}/...`. Every read and write must be scoped to the authenticated user's UID. Security Rules must verify that `request.auth.uid` matches the path UID.
+Store user data beneath `users/{uid}/...`. Every read and write must be scoped to the authenticated user's UID. Security Rules must verify `request.auth.uid == uid`, restrict access to the allowlisted owner Firebase UID (obtained from the Firebase Console after the first Google sign-in), and default-deny everywhere else. Note that the allowlisted UID in `firestore.rules` must be updated if that owner user account is ever deleted and re-created, and this temporary personal-use allowlist must be removed or replaced before any public multi-user release.
 
 ## 8. Date and time handling
 
@@ -123,12 +123,14 @@ Store user data beneath `users/{uid}/...`. Every read and write must be scoped t
 - Avoid duplicate reads caused by component remounts.
 - Review Firestore usage and pricing before enabling paid features.
 - Do not assume the free tier is unlimited; check current Firebase plan limits before deployment.
+- Stay on the free Firebase Spark plan. Do not upgrade to Blaze or attach a billing card unless a required feature forces it and only after explicit owner approval.
 
 ## 10. Future expansion
 
 When public multi-user support is introduced:
+- Remove or replace the temporary personal-use owner UID allowlist in Firestore Security Rules.
 - Enable controlled registration.
 - Add account recovery and verification as needed.
 - Review Firestore rules and indexes.
 - Add data export/deletion workflows.
-- Consider Cloud Functions only when trusted server-side logic is genuinely required.
+- Consider Cloud Functions only when trusted server-side logic is genuinely required (out of MVP scope on the Spark plan).

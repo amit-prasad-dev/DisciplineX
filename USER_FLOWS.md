@@ -15,7 +15,7 @@ Future navigation items (Study, Fitness, Journal) should be added only when thos
 ## Flow 1: First-time setup
 
 1. User opens DisciplineX.
-2. If authentication is enabled, user signs in.
+2. All routes are gated behind `/sign-in`: user signs in with Google (`signInWithPopup`); non-allowlisted accounts see `"This account doesn't have access yet"` with Sign out; signing out clears in-memory data.
 3. User sees an onboarding/empty dashboard.
 4. User creates their first habit.
 5. User chooses its category (controlled list; MVP values: `Learning`, `Fitness`, `Personal`, `Health`; configurable categories may come later), schedule (daily or selected Monday–Sunday weekdays `mon`–`sun`), target (simple completion with optional display-only `targetTimeLabel` meaningful only for `boolean`-target habits, or numeric value + unit), and start date.

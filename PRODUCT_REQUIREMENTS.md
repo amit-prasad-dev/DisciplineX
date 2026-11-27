@@ -24,6 +24,8 @@ The first release is personal-use only. The data model and security model should
 - Wearable/device integrations.
 - Push notifications and email reminders.
 - Complex team or organization management.
+- Email/password sign-in, password reset, and email-verification screens (MVP uses Google sign-in only).
+- Cloud Functions and Identity Platform upgrades (blocking functions); MVP stays on the free Spark plan.
 
 ## 4. Target user
 
@@ -98,7 +100,7 @@ Habit deletion should not erase historical logs. Prefer archive/soft-delete beha
 - Loading, empty, success, and error states.
 - Form validation with useful messages.
 - No secrets in source control.
-- Firestore access restricted by authenticated user ownership.
+- Firestore access restricted by authenticated user ownership plus a temporary owner Firebase UID allowlist for personal use (default deny everywhere else).
 - Avoid unnecessary reads and writes; use appropriate Firestore queries and indexes.
 - Keep business calculations testable independently of React components.
 
