@@ -118,6 +118,146 @@ export function updateHabitDatesInList(
   )
 }
 
+function hasKeys(obj) {
+  return Boolean(obj && typeof obj === 'object' && Object.keys(obj).length > 0)
+}
+
+function getLatestEffectiveVersion(versions) {
+  let latest = versions[0]
+  for (let i = 1; i < versions.length; i += 1) {
+    if (versions[i].effectiveFrom >= latest.effectiveFrom) {
+      latest = versions[i]
+    }
+  }
+  return latest
+}
+
+/**
+ * Atomically apply dates -> scheduleTarget -> details to a habit in `habits`.
+ * Pre-validates each supplied group independently against the original habit to
+ * merge errors across groups, then applies them in order on a working copy so
+ * a failure in any step leaves `habits` completely unchanged.
+ */
+export function updateHabitInList(
+  habits,
+  habitId,
+  { details, scheduleTarget, dates } = {},
+  { todayKey, now },
+) {
+  return applyOperationById(habits, habitId, (originalHabit) => {
+    const hasDates = hasKeys(dates)
+    const hasScheduleTarget = hasKeys(scheduleTarget)
+    const hasDetails = hasKeys(details)
+
+    if (!hasDates && !hasScheduleTarget && !hasDetails) {
+      return { ok: true, habit: originalHabit }
+    }
+
+    if (originalHabit.status === HABIT_STATUSES.ARCHIVED) {
+      return {
+        ok: false,
+        errors: { form: 'Restore this habit before editing it.' },
+      }
+    }
+
+    const mergedErrors = {}
+
+    if (hasDates) {
+      const datesCheck = updateHabitDates(originalHabit, dates, {
+        todayKey,
+        now,
+      })
+      if (!datesCheck.ok) {
+        Object.assign(mergedErrors, datesCheck.errors)
+      }
+    }
+
+    let scheduleTargetCheck = null
+    if (hasScheduleTarget) {
+      scheduleTargetCheck = updateHabitScheduleOrTarget(
+        originalHabit,
+        scheduleTarget,
+        { todayKey, now },
+      )
+      if (!scheduleTargetCheck.ok) {
+        Object.assign(mergedErrors, scheduleTargetCheck.errors)
+      }
+    }
+
+    if (hasDetails) {
+      let detailsBaseHabit = originalHabit
+      if (hasScheduleTarget) {
+        if (scheduleTargetCheck?.ok) {
+          detailsBaseHabit = scheduleTargetCheck.habit
+        } else if (
+          scheduleTarget &&
+          typeof scheduleTarget === 'object' &&
+          'targetType' in scheduleTarget
+        ) {
+          const latestVersion = getLatestEffectiveVersion(
+            originalHabit.versions,
+          )
+          detailsBaseHabit = {
+            ...originalHabit,
+            versions: [
+              {
+                ...latestVersion,
+                targetType: scheduleTarget.targetType,
+              },
+            ],
+          }
+        }
+      }
+
+      const detailsCheck = updateHabitDetails(detailsBaseHabit, details, {
+        now,
+      })
+      if (!detailsCheck.ok) {
+        Object.assign(mergedErrors, detailsCheck.errors)
+      }
+    }
+
+    if (Object.keys(mergedErrors).length > 0) {
+      return { ok: false, errors: mergedErrors }
+    }
+
+    let workingHabit = originalHabit
+
+    if (hasDates) {
+      const datesResult = updateHabitDates(workingHabit, dates, {
+        todayKey,
+        now,
+      })
+      if (!datesResult.ok) {
+        return { ok: false, errors: datesResult.errors }
+      }
+      workingHabit = datesResult.habit
+    }
+
+    if (hasScheduleTarget) {
+      const scheduleTargetResult = updateHabitScheduleOrTarget(
+        workingHabit,
+        scheduleTarget,
+        { todayKey, now },
+      )
+      if (!scheduleTargetResult.ok) {
+        return { ok: false, errors: scheduleTargetResult.errors }
+      }
+      workingHabit = scheduleTargetResult.habit
+    }
+
+    if (hasDetails) {
+      const detailsResult = updateHabitDetails(workingHabit, details, { now })
+      if (!detailsResult.ok) {
+        return { ok: false, errors: detailsResult.errors }
+      }
+      workingHabit = detailsResult.habit
+    }
+
+    return { ok: true, habit: workingHabit }
+  })
+}
+
 export function archiveHabitInList(habits, habitId, { now }) {
   return applyOperationById(habits, habitId, (habit) =>
     archiveHabit(habit, { now }),

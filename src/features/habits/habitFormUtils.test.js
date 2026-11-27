@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   WEEKDAY_OPTIONS,
+  buildHabitUpdate,
+  createEditHabitFormValues,
   createInitialHabitFormValues,
+  getErrorSummaryItems,
   parseNumericTargetInput,
   toCreateHabitInput,
 } from './habitFormUtils.js'
@@ -154,5 +157,223 @@ describe('toCreateHabitInput', () => {
       endDate: '',
     })
     expect(Number.isNaN(badVal.targetValue)).toBe(true)
+  })
+})
+
+describe('createEditHabitFormValues & buildHabitUpdate', () => {
+  const startedHabit = {
+    id: 'habit-1',
+    name: 'Core Java',
+    description: 'Practice collections',
+    category: 'Learning',
+    icon: null,
+    targetTimeLabel: null,
+    startDate: '2026-11-10',
+    endDate: null,
+    status: 'active',
+    versions: [
+      {
+        effectiveFrom: '2026-11-10',
+        frequencyType: 'selected_weekdays',
+        scheduledWeekdays: ['mon', 'wed', 'fri'],
+        targetType: 'numeric',
+        targetValue: 60,
+        targetUnit: 'minutes',
+      },
+    ],
+  }
+
+  const futureHabitOutOfOrder = {
+    id: 'habit-2',
+    name: 'Wake up early',
+    description: null,
+    category: 'Personal',
+    icon: null,
+    targetTimeLabel: '5:00 AM',
+    startDate: '2026-12-05',
+    endDate: '2026-12-31',
+    status: 'active',
+    versions: [
+      {
+        effectiveFrom: '2026-12-10',
+        frequencyType: 'daily',
+        scheduledWeekdays: [],
+        targetType: 'numeric',
+        targetValue: 1,
+        targetUnit: null,
+      },
+      {
+        effectiveFrom: '2026-12-05',
+        frequencyType: 'daily',
+        scheduledWeekdays: [],
+        targetType: 'boolean',
+        targetValue: null,
+        targetUnit: null,
+      },
+    ],
+  }
+
+  it('initializes edit form values from the version with smallest effectiveFrom when not started', () => {
+    const values = createEditHabitFormValues(futureHabitOutOfOrder, '2026-11-27')
+    expect(values.targetType).toBe('boolean')
+    expect(values.targetTimeLabel).toBe('5:00 AM')
+    expect(values.startDate).toBe('2026-12-05')
+    expect(values.endDate).toBe('2026-12-31')
+  })
+
+  it('returns all null groups when nothing changed (ignoring whitespace and weekday order)', () => {
+    const initial = createEditHabitFormValues(startedHabit, '2026-11-27')
+    const update = buildHabitUpdate(
+      startedHabit,
+      {
+        ...initial,
+        name: '  Core Java  ',
+        scheduledWeekdays: ['fri', 'mon', 'wed'],
+        endDate: '   ',
+      },
+      '2026-11-27',
+    )
+
+    expect(update).toEqual({
+      details: null,
+      scheduleTarget: null,
+      dates: null,
+    })
+  })
+
+  it('routes details, schedule, and dates only to their respective groups', () => {
+    const base = createEditHabitFormValues(startedHabit, '2026-11-27')
+
+    expect(
+      buildHabitUpdate(
+        startedHabit,
+        { ...base, description: '   ', category: 'Personal' },
+        '2026-11-27',
+      ),
+    ).toEqual({
+      details: { description: null, category: 'Personal' },
+      scheduleTarget: null,
+      dates: null,
+    })
+
+    expect(
+      buildHabitUpdate(
+        startedHabit,
+        { ...base, frequencyType: 'daily' },
+        '2026-11-27',
+      ),
+    ).toEqual({
+      details: null,
+      scheduleTarget: { frequencyType: 'daily' },
+      dates: null,
+    })
+
+    expect(
+      buildHabitUpdate(
+        startedHabit,
+        { ...base, endDate: '2026-12-31' },
+        '2026-11-27',
+      ),
+    ).toEqual({
+      details: null,
+      scheduleTarget: null,
+      dates: { endDate: '2026-12-31' },
+    })
+  })
+
+  it('ignores startDate changes when already started, and includes startDate when future', () => {
+    const startedValues = createEditHabitFormValues(startedHabit, '2026-11-27')
+    expect(
+      buildHabitUpdate(
+        startedHabit,
+        { ...startedValues, startDate: '2026-11-28' },
+        '2026-11-27',
+      ),
+    ).toEqual({
+      details: null,
+      scheduleTarget: null,
+      dates: null,
+    })
+
+    const futureValues = createEditHabitFormValues(
+      futureHabitOutOfOrder,
+      '2026-11-27',
+    )
+    expect(
+      buildHabitUpdate(
+        futureHabitOutOfOrder,
+        { ...futureValues, startDate: '2026-12-01' },
+        '2026-11-27',
+      ),
+    ).toEqual({
+      details: null,
+      scheduleTarget: null,
+      dates: { startDate: '2026-12-01' },
+    })
+  })
+
+  it('handles numeric <-> boolean switches cleanly without leaking cross-type fields', () => {
+    const numericValues = createEditHabitFormValues(startedHabit, '2026-11-27')
+    expect(
+      buildHabitUpdate(
+        startedHabit,
+        {
+          ...numericValues,
+          targetType: 'boolean',
+          targetTimeLabel: ' 6:30 AM ',
+        },
+        '2026-11-27',
+      ),
+    ).toEqual({
+      details: { targetTimeLabel: '6:30 AM' },
+      scheduleTarget: { targetType: 'boolean' },
+      dates: null,
+    })
+
+    const boolValues = createEditHabitFormValues(
+      futureHabitOutOfOrder,
+      '2026-11-27',
+    )
+    expect(
+      buildHabitUpdate(
+        futureHabitOutOfOrder,
+        {
+          ...boolValues,
+          targetType: 'numeric',
+          targetValue: '30',
+          targetUnit: 'minutes',
+        },
+        '2026-11-27',
+      ),
+    ).toEqual({
+      details: null,
+      scheduleTarget: {
+        targetType: 'numeric',
+        targetValue: 30,
+        targetUnit: 'minutes',
+      },
+      dates: null,
+    })
+  })
+
+  it('maps error summary items only to visible field IDs and treats non-visible keys as summary-only', () => {
+    const items = getErrorSummaryItems(
+      {
+        form: 'Restore first.',
+        name: 'Enter a habit name.',
+        startDate: 'Start date cannot be changed.',
+      },
+      { name: 'habit-name' },
+    )
+
+    expect(items).toEqual([
+      { fieldKey: 'form', message: 'Restore first.', targetId: null },
+      { fieldKey: 'name', message: 'Enter a habit name.', targetId: 'habit-name' },
+      {
+        fieldKey: 'startDate',
+        message: 'Start date cannot be changed.',
+        targetId: null,
+      },
+    ])
   })
 })

@@ -9,6 +9,7 @@ import {
   selectArchivedHabits,
   updateHabitDatesInList,
   updateHabitDetailsInList,
+  updateHabitInList,
   updateHabitScheduleOrTargetInList,
 } from './habitStoreLogic.js'
 
@@ -211,5 +212,214 @@ describe('habitStoreLogic', () => {
       expect(missingResult.errors.form).toBeTruthy()
       expect(missingResult.habits).toBe(list)
     }
+  })
+})
+
+describe('updateHabitInList (atomic multi-group update)', () => {
+  it('updates dates, scheduleTarget, and details atomically and leaves other habits untouched', () => {
+    const h1 = createHabitInList([], JAVA_INPUT, {
+      id: 'h-1',
+      now: '2026-11-10T06:00:00Z',
+    }).habits
+    const list = createHabitInList(h1, EXERCISE_INPUT, {
+      id: 'h-2',
+      now: '2026-11-10T06:05:00Z',
+    }).habits
+    const listSnapshot = deepClone(list)
+
+    const result = updateHabitInList(
+      list,
+      'h-1',
+      {
+        dates: { endDate: '2026-12-31' },
+        scheduleTarget: {
+          frequencyType: 'selected_weekdays',
+          scheduledWeekdays: ['mon', 'wed', 'fri'],
+          targetValue: 90,
+        },
+        details: {
+          name: 'Core Java Mastery',
+          description: 'Updated description',
+        },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+
+    expect(list).toEqual(listSnapshot)
+    expect(result.ok).toBe(true)
+    expect(result.habit.name).toBe('Core Java Mastery')
+    expect(result.habit.description).toBe('Updated description')
+    expect(result.habit.endDate).toBe('2026-12-31')
+    expect(result.habit.versions).toHaveLength(2)
+    expect(result.habit.versions[1].targetValue).toBe(90)
+    expect(result.habits[1]).toEqual(listSnapshot[1])
+    expect(result.habits[1]).toBe(list[1])
+  })
+
+  it('supports label changes in both directions (boolean -> numeric removes label; numeric -> boolean + new label adds it)', () => {
+    const h1 = createHabitInList([], JAVA_INPUT, {
+      id: 'h-1',
+      now: '2026-11-10T06:00:00Z',
+    }).habits
+    const list = createHabitInList(h1, EXERCISE_INPUT, {
+      id: 'h-2',
+      now: '2026-11-10T06:05:00Z',
+    }).habits
+
+    const boolToNumeric = updateHabitInList(
+      list,
+      'h-2',
+      {
+        scheduleTarget: {
+          targetType: 'numeric',
+          targetValue: 45,
+          targetUnit: 'minutes',
+        },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(boolToNumeric.ok).toBe(true)
+    expect(boolToNumeric.habit.targetTimeLabel).toBeNull()
+    expect(boolToNumeric.habit.versions[0].targetType).toBe('numeric')
+
+    const numericToBoolWithLabel = updateHabitInList(
+      list,
+      'h-1',
+      {
+        scheduleTarget: { targetType: 'boolean' },
+        details: { targetTimeLabel: '7:00 AM' },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(numericToBoolWithLabel.ok).toBe(true)
+    expect(numericToBoolWithLabel.habit.targetTimeLabel).toBe('7:00 AM')
+    expect(numericToBoolWithLabel.habit.versions[1].targetType).toBe('boolean')
+  })
+
+  it('collects errors from all groups when multiple groups fail at once and leaves list unchanged', () => {
+    const list = createHabitInList([], JAVA_INPUT, {
+      id: 'h-1',
+      now: '2026-11-10T06:00:00Z',
+    }).habits
+    const snapshot = deepClone(list)
+
+    const result = updateHabitInList(
+      list,
+      'h-1',
+      {
+        dates: { endDate: '2026-11-20' },
+        scheduleTarget: { targetValue: 0 },
+        details: { name: '   ' },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.errors.endDate).toBeTruthy()
+    expect(result.errors.targetValue).toBeTruthy()
+    expect(result.errors.name).toBeTruthy()
+    expect(result.habits).toBe(list)
+    expect(list).toEqual(snapshot)
+  })
+
+  it('leaves the habit deep-equal if only one group fails (dates, scheduleTarget, or details)', () => {
+    const list = createHabitInList([], JAVA_INPUT, {
+      id: 'h-1',
+      now: '2026-11-10T06:00:00Z',
+    }).habits
+    const snapshot = deepClone(list)
+
+    const failDates = updateHabitInList(
+      list,
+      'h-1',
+      {
+        dates: { startDate: '2026-11-28' },
+        scheduleTarget: { targetValue: 90 },
+        details: { name: 'Valid Name' },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(failDates.ok).toBe(false)
+    expect(failDates.errors.startDate).toBeTruthy()
+    expect(list).toEqual(snapshot)
+
+    const failSchedule = updateHabitInList(
+      list,
+      'h-1',
+      {
+        dates: { endDate: '2026-12-31' },
+        scheduleTarget: { frequencyType: 'selected_weekdays' },
+        details: { name: 'Valid Name' },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(failSchedule.ok).toBe(false)
+    expect(failSchedule.errors.scheduledWeekdays).toBeTruthy()
+    expect(list).toEqual(snapshot)
+
+    const failDetails = updateHabitInList(
+      list,
+      'h-1',
+      {
+        dates: { endDate: '2026-12-31' },
+        scheduleTarget: { targetValue: 90 },
+        details: { name: '' },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(failDetails.ok).toBe(false)
+    expect(failDetails.errors.name).toBeTruthy()
+    expect(list).toEqual(snapshot)
+  })
+
+  it('allows extending a past endDate and updating scheduleTarget in the same save because dates apply first', () => {
+    const endedList = createHabitInList(
+      [],
+      { ...JAVA_INPUT, endDate: '2026-11-20' },
+      { id: 'h-ended', now: '2026-11-10T06:00:00Z' },
+    ).habits
+
+    const result = updateHabitInList(
+      endedList,
+      'h-ended',
+      {
+        dates: { endDate: '2026-12-15' },
+        scheduleTarget: { targetValue: 75 },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.habit.endDate).toBe('2026-12-15')
+    expect(result.habit.versions[1].targetValue).toBe(75)
+  })
+
+  it('rejects not-found IDs and archived habits', () => {
+    const list = createHabitInList([], JAVA_INPUT, {
+      id: 'h-1',
+      now: '2026-11-10T06:00:00Z',
+    }).habits
+
+    const notFound = updateHabitInList(
+      list,
+      'missing',
+      { details: { name: 'X' } },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(notFound.ok).toBe(false)
+    expect(notFound.errors.form).toBeTruthy()
+
+    const archivedList = archiveHabitInList(list, 'h-1', {
+      now: '2026-11-27T08:00:00Z',
+    }).habits
+
+    const editArchived = updateHabitInList(
+      archivedList,
+      'h-1',
+      { details: { name: 'Updated' } },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(editArchived.ok).toBe(false)
+    expect(editArchived.errors.form).toBeTruthy()
   })
 })

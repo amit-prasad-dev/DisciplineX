@@ -5,6 +5,7 @@ import CalendarPage from '../features/calendar/CalendarPage.jsx'
 import ChallengesPage from '../features/challenges/ChallengesPage.jsx'
 import DailyTrackerPage from '../features/dailyTracking/DailyTrackerPage.jsx'
 import DashboardPage from '../features/dashboard/DashboardPage.jsx'
+import EditHabitPage from '../features/habits/EditHabitPage.jsx'
 import HabitsPage from '../features/habits/HabitsPage.jsx'
 import NewHabitPage from '../features/habits/NewHabitPage.jsx'
 import SettingsPage from '../features/settings/SettingsPage.jsx'
@@ -17,6 +18,7 @@ export default function AppRouter() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/habits" element={<HabitsPage />} />
         <Route path="/habits/new" element={<NewHabitPage />} />
+        <Route path="/habits/:habitId/edit" element={<EditHabitPage />} />
         <Route path="/daily-tracker" element={<DailyTrackerPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/challenges" element={<ChallengesPage />} />

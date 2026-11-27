@@ -1,5 +1,5 @@
 import { WEEKDAY_KEYS, parseDateKey } from '../../utils/date.js'
-import { WEEKDAY_OPTIONS } from './habitFormUtils.js'
+import { WEEKDAY_OPTIONS } from './habitConstants.js'
 import { getEffectiveVersion } from './habitSchedule.js'
 
 const MONTH_SHORT_NAMES = Object.freeze([
@@ -89,7 +89,7 @@ export function formatTargetSummary(version, targetTimeLabel) {
   return '—'
 }
 
-function getEarliestVersion(versions) {
+export function getEarliestVersion(versions) {
   if (!Array.isArray(versions) || versions.length === 0) {
     return null
   }

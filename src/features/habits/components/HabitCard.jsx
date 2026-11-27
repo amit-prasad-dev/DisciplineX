@@ -1,4 +1,12 @@
-import { Archive, Calendar, CheckCircle2, Clock, RotateCcw } from 'lucide-react'
+import {
+  Archive,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Pencil,
+  RotateCcw,
+} from 'lucide-react'
+import { Link } from 'react-router'
 import { getHabitDisplayInfo } from '../habitDisplay.js'
 
 export default function HabitCard({ habit, todayKey, onArchive, onRestore }) {
@@ -84,7 +92,7 @@ export default function HabitCard({ habit, todayKey, onArchive, onRestore }) {
         </dl>
       </div>
 
-      <div className="flex justify-end border-t border-border pt-3">
+      <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
         {isArchived ? (
           <button
             type="button"
@@ -96,15 +104,25 @@ export default function HabitCard({ habit, todayKey, onArchive, onRestore }) {
             <span>Restore</span>
           </button>
         ) : (
-          <button
-            type="button"
-            aria-label={`Archive ${habit.name}`}
-            onClick={() => onArchive(habit)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface-subtle px-3.5 py-2 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <Archive size={15} strokeWidth={2} aria-hidden="true" />
-            <span>Archive</span>
-          </button>
+          <>
+            <Link
+              to={`/habits/${habit.id}/edit`}
+              aria-label={`Edit ${habit.name}`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface-subtle px-3.5 py-2 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <Pencil size={15} strokeWidth={2} aria-hidden="true" />
+              <span>Edit</span>
+            </Link>
+            <button
+              type="button"
+              aria-label={`Archive ${habit.name}`}
+              onClick={() => onArchive(habit)}
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface-subtle px-3.5 py-2 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <Archive size={15} strokeWidth={2} aria-hidden="true" />
+              <span>Archive</span>
+            </button>
+          </>
         )}
       </div>
     </article>

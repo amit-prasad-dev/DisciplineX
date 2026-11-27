@@ -13,6 +13,7 @@ import {
   selectArchivedHabits,
   updateHabitDatesInList,
   updateHabitDetailsInList,
+  updateHabitInList,
   updateHabitScheduleOrTargetInList,
 } from '../features/habits/habitStoreLogic.js'
 import { DEFAULT_TIME_ZONE, getLocalDateKey } from '../utils/date.js'
@@ -85,6 +86,17 @@ export function HabitsProvider({
     [runListAction, getTodayKey, getNow],
   )
 
+  const updateHabit = useCallback(
+    (habitId, changes) =>
+      runListAction((list) =>
+        updateHabitInList(list, habitId, changes, {
+          todayKey: getTodayKey(),
+          now: getNow(),
+        }),
+      ),
+    [runListAction, getTodayKey, getNow],
+  )
+
   const archiveHabit = useCallback(
     (habitId) =>
       runListAction((list) =>
@@ -118,6 +130,7 @@ export function HabitsProvider({
       updateHabitDetails,
       updateHabitScheduleOrTarget,
       updateHabitDates,
+      updateHabit,
       archiveHabit,
       restoreHabit,
     }),
@@ -130,6 +143,7 @@ export function HabitsProvider({
       updateHabitDetails,
       updateHabitScheduleOrTarget,
       updateHabitDates,
+      updateHabit,
       archiveHabit,
       restoreHabit,
     ],

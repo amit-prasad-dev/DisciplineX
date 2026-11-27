@@ -1,35 +1,36 @@
 import { AlertCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { getLocalDateKey } from '../../../utils/date.js'
 import { HABIT_CATEGORIES } from '../habitConstants.js'
+import { formatDateKeyForDisplay } from '../habitDisplay.js'
 import {
   WEEKDAY_OPTIONS,
+  buildHabitUpdate,
+  createEditHabitFormValues,
   createInitialHabitFormValues,
-  toCreateHabitInput,
+  getErrorSummaryItems,
 } from '../habitFormUtils.js'
-
-const FIELD_ELEMENT_IDS = {
-  name: 'habit-name',
-  description: 'habit-description',
-  category: 'habit-category',
-  frequencyType: 'habit-frequency-daily',
-  scheduledWeekdays: 'habit-weekday-mon',
-  targetType: 'habit-target-boolean',
-  targetTimeLabel: 'habit-target-time-label',
-  targetValue: 'habit-target-value',
-  targetUnit: 'habit-target-unit',
-  startDate: 'habit-start-date',
-  endDate: 'habit-end-date',
-}
 
 const INPUT_BASE_CLASS =
   'mt-1.5 block w-full rounded-md border border-border bg-bg px-3 py-2.5 text-sm text-text placeholder:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
 
-export default function HabitForm({ onCreateHabit, onSuccess }) {
+export default function HabitForm({
+  mode = 'create',
+  habit = null,
+  onSubmit,
+  onSuccess,
+}) {
+  const isEditMode = mode === 'edit' && habit !== null
+  const todayKey = getLocalDateKey()
+
   const [formValues, setFormValues] = useState(() =>
-    createInitialHabitFormValues(),
+    isEditMode
+      ? createEditHabitFormValues(habit, todayKey)
+      : createInitialHabitFormValues(todayKey),
   )
   const [errors, setErrors] = useState({})
+  const [noChangesMessage, setNoChangesMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitFailureCount, setSubmitFailureCount] = useState(0)
 
@@ -42,11 +43,43 @@ export default function HabitForm({ onCreateHabit, onSuccess }) {
     }
   }, [submitFailureCount])
 
+  const isStartDateEditable = !isEditMode || habit.startDate > todayKey
+  const minEndDate = isEditMode
+    ? formValues.startDate > todayKey
+      ? formValues.startDate
+      : todayKey
+    : undefined
+
+  const pendingEditUpdate = isEditMode
+    ? buildHabitUpdate(habit, formValues, todayKey)
+    : null
+
+  const visibleFieldIds = {
+    name: 'habit-name',
+    description: 'habit-description',
+    category: 'habit-category',
+    frequencyType: 'habit-frequency-daily',
+    ...(formValues.frequencyType === 'selected_weekdays'
+      ? { scheduledWeekdays: 'habit-weekday-mon' }
+      : {}),
+    targetType: 'habit-target-boolean',
+    ...(formValues.targetType === 'boolean'
+      ? { targetTimeLabel: 'habit-target-time-label' }
+      : {
+          targetValue: 'habit-target-value',
+          targetUnit: 'habit-target-unit',
+        }),
+    ...(isStartDateEditable ? { startDate: 'habit-start-date' } : {}),
+    endDate: 'habit-end-date',
+  }
+
   const updateField = (field, value) => {
+    setNoChangesMessage('')
     setFormValues((prev) => ({ ...prev, [field]: value }))
   }
 
   const toggleWeekday = (weekdayKey) => {
+    setNoChangesMessage('')
     setFormValues((prev) => {
       const exists = prev.scheduledWeekdays.includes(weekdayKey)
       const nextWeekdays = exists
@@ -62,10 +95,24 @@ export default function HabitForm({ onCreateHabit, onSuccess }) {
       return
     }
 
+    if (isEditMode) {
+      const updatePayload = buildHabitUpdate(habit, formValues, todayKey)
+      if (
+        !updatePayload.details &&
+        !updatePayload.scheduleTarget &&
+        !updatePayload.dates
+      ) {
+        setErrors({})
+        setNoChangesMessage('No changes to save')
+        return
+      }
+    }
+
     submitLockRef.current = true
     setIsSubmitting(true)
+    setNoChangesMessage('')
 
-    const result = onCreateHabit(toCreateHabitInput(formValues))
+    const result = onSubmit(formValues, todayKey)
 
     if (result.ok) {
       onSuccess(result.habit)
@@ -78,11 +125,25 @@ export default function HabitForm({ onCreateHabit, onSuccess }) {
     setSubmitFailureCount((count) => count + 1)
   }
 
-  const errorEntries = Object.entries(errors)
+  const errorSummaryItems = getErrorSummaryItems(errors, visibleFieldIds)
+
+  const scheduleChangeNote =
+    isEditMode && pendingEditUpdate?.scheduleTarget
+      ? habit.startDate > todayKey
+        ? `Schedule and target changes apply from its start date (${formatDateKeyForDisplay(habit.startDate)}).`
+        : `Schedule and target changes apply from today (${formatDateKeyForDisplay(todayKey)}). Earlier days keep their previous schedule and target.`
+      : ''
+
+  const timeLabelRemovalNote =
+    isEditMode &&
+    formValues.targetType === 'numeric' &&
+    habit.targetTimeLabel
+      ? `Switching to a numeric target will remove the existing time label (${habit.targetTimeLabel}).`
+      : ''
 
   return (
     <form onSubmit={handleSubmit} noValidate className="max-w-2xl space-y-6">
-      {errorEntries.length > 0 ? (
+      {errorSummaryItems.length > 0 ? (
         <div
           ref={errorSummaryRef}
           tabIndex={-1}
@@ -106,30 +167,47 @@ export default function HabitForm({ onCreateHabit, onSuccess }) {
           </div>
 
           <ul className="mt-2.5 space-y-1.5 text-sm list-disc pl-5 m-0">
-            {errorEntries.map(([fieldKey, message]) => {
-              const targetId = FIELD_ELEMENT_IDS[fieldKey]
-              return (
-                <li key={fieldKey} className="text-text">
-                  {targetId ? (
-                    <a
-                      href={`#${targetId}`}
-                      onClick={(event) => {
-                        event.preventDefault()
-                        document.getElementById(targetId)?.focus()
-                      }}
-                      className="text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                    >
-                      {message}
-                    </a>
-                  ) : (
-                    <span>{message}</span>
-                  )}
-                </li>
-              )
-            })}
+            {errorSummaryItems.map((item) => (
+              <li key={item.fieldKey} className="text-text">
+                {item.targetId ? (
+                  <a
+                    href={`#${item.targetId}`}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      document.getElementById(item.targetId)?.focus()
+                    }}
+                    className="text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    {item.message}
+                  </a>
+                ) : (
+                  <span>{item.message}</span>
+                )}
+              </li>
+            ))}
           </ul>
         </div>
       ) : null}
+
+      <div role="status" aria-live="polite" className="space-y-2">
+        {noChangesMessage ? (
+          <div className="rounded-lg border border-border bg-surface-subtle px-4 py-3 text-sm font-medium text-text">
+            {noChangesMessage}
+          </div>
+        ) : null}
+
+        {scheduleChangeNote ? (
+          <div className="rounded-lg border border-border bg-surface-subtle px-4 py-3 text-sm text-text">
+            {scheduleChangeNote}
+          </div>
+        ) : null}
+
+        {timeLabelRemovalNote ? (
+          <div className="rounded-lg border border-border bg-surface-subtle px-4 py-3 text-sm text-text-muted">
+            {timeLabelRemovalNote}
+          </div>
+        ) : null}
+      </div>
 
       <div className="rounded-lg border border-border bg-surface p-5 sm:p-6 space-y-5">
         <div>
@@ -151,7 +229,10 @@ export default function HabitForm({ onCreateHabit, onSuccess }) {
             className={INPUT_BASE_CLASS}
           />
           {errors.name ? (
-            <p id="habit-name-error" className="mt-1.5 text-xs font-medium text-text">
+            <p
+              id="habit-name-error"
+              className="mt-1.5 text-xs font-medium text-text"
+            >
               {errors.name}
             </p>
           ) : null}
@@ -482,32 +563,49 @@ export default function HabitForm({ onCreateHabit, onSuccess }) {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label
-              htmlFor="habit-start-date"
-              className="block text-sm font-medium text-text"
-            >
-              Start date
-            </label>
-            <input
-              id="habit-start-date"
-              name="startDate"
-              type="date"
-              value={formValues.startDate}
-              onChange={(event) => updateField('startDate', event.target.value)}
-              aria-invalid={errors.startDate ? 'true' : undefined}
-              aria-describedby={
-                errors.startDate ? 'habit-start-date-error' : undefined
-              }
-              className={INPUT_BASE_CLASS}
-            />
-            {errors.startDate ? (
-              <p
-                id="habit-start-date-error"
-                className="mt-1.5 text-xs font-medium text-text"
-              >
-                {errors.startDate}
-              </p>
-            ) : null}
+            {isStartDateEditable ? (
+              <>
+                <label
+                  htmlFor="habit-start-date"
+                  className="block text-sm font-medium text-text"
+                >
+                  Start date
+                </label>
+                <input
+                  id="habit-start-date"
+                  name="startDate"
+                  type="date"
+                  min={isEditMode ? todayKey : undefined}
+                  value={formValues.startDate}
+                  onChange={(event) =>
+                    updateField('startDate', event.target.value)
+                  }
+                  aria-invalid={errors.startDate ? 'true' : undefined}
+                  aria-describedby={
+                    errors.startDate ? 'habit-start-date-error' : undefined
+                  }
+                  className={INPUT_BASE_CLASS}
+                />
+                {errors.startDate ? (
+                  <p
+                    id="habit-start-date-error"
+                    className="mt-1.5 text-xs font-medium text-text"
+                  >
+                    {errors.startDate}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <div>
+                <p className="text-sm font-medium text-text">Start date</p>
+                <p className="mt-1.5 rounded-md border border-border bg-surface-subtle px-3 py-2.5 text-sm font-semibold text-text">
+                  {formatDateKeyForDisplay(habit.startDate)}
+                </p>
+                <p className="mt-1.5 text-xs text-text-muted">
+                  Start date cannot be changed once the habit has started.
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -517,18 +615,40 @@ export default function HabitForm({ onCreateHabit, onSuccess }) {
             >
               End date (optional)
             </label>
-            <input
-              id="habit-end-date"
-              name="endDate"
-              type="date"
-              value={formValues.endDate}
-              onChange={(event) => updateField('endDate', event.target.value)}
-              aria-invalid={errors.endDate ? 'true' : undefined}
-              aria-describedby={
-                errors.endDate ? 'habit-end-date-error' : undefined
-              }
-              className={INPUT_BASE_CLASS}
-            />
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                id="habit-end-date"
+                name="endDate"
+                type="date"
+                min={minEndDate}
+                value={formValues.endDate}
+                onChange={(event) => updateField('endDate', event.target.value)}
+                aria-invalid={errors.endDate ? 'true' : undefined}
+                aria-describedby={
+                  errors.endDate
+                    ? 'habit-end-date-hint habit-end-date-error'
+                    : 'habit-end-date-hint'
+                }
+                className="block w-full rounded-md border border-border bg-bg px-3 py-2.5 text-sm text-text placeholder:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              />
+              {isEditMode && formValues.endDate ? (
+                <button
+                  type="button"
+                  onClick={() => updateField('endDate', '')}
+                  className="inline-flex min-h-11 shrink-0 items-center rounded-md border border-border bg-surface-subtle px-3 py-2 text-xs font-medium text-text hover:bg-surface transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+            <p
+              id="habit-end-date-hint"
+              className="mt-1.5 text-xs text-text-muted"
+            >
+              {isEditMode
+                ? `Leave blank for no end date. Minimum when set: ${formatDateKeyForDisplay(minEndDate)}.`
+                : 'Leave blank for no end date.'}
+            </p>
             {errors.endDate ? (
               <p
                 id="habit-end-date-error"
@@ -547,7 +667,7 @@ export default function HabitForm({ onCreateHabit, onSuccess }) {
           disabled={isSubmitting}
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          Create habit
+          {isEditMode ? 'Save changes' : 'Create habit'}
         </button>
 
         <Link

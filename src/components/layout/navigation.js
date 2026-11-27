@@ -22,6 +22,9 @@ export function getPageTitle(pathname) {
   if (pathname === '/habits/new') {
     return 'New habit'
   }
+  if (/^\/habits\/[^/]+\/edit$/.test(pathname)) {
+    return 'Edit habit'
+  }
   const match = NAV_ITEMS.find((item) => item.to === pathname)
   return match ? match.label : 'Page not found'
 }

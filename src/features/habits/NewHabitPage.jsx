@@ -1,10 +1,14 @@
 import { useNavigate } from 'react-router'
 import { useHabits } from '../../hooks/useHabits.js'
 import HabitForm from './components/HabitForm.jsx'
+import { toCreateHabitInput } from './habitFormUtils.js'
 
 export default function NewHabitPage() {
   const { createHabit } = useHabits()
   const navigate = useNavigate()
+
+  const handleCreate = (formValues) =>
+    createHabit(toCreateHabitInput(formValues))
 
   const handleSuccess = () => {
     navigate('/habits', { state: { statusMessage: 'Habit created' } })
@@ -19,7 +23,7 @@ export default function NewHabitPage() {
         </p>
       </div>
 
-      <HabitForm onCreateHabit={createHabit} onSuccess={handleSuccess} />
+      <HabitForm mode="create" onSubmit={handleCreate} onSuccess={handleSuccess} />
     </div>
   )
 }
