@@ -19,6 +19,9 @@ export const NAV_ITEMS = [
 ]
 
 export function getPageTitle(pathname) {
+  if (pathname === '/habits/new') {
+    return 'New habit'
+  }
   const match = NAV_ITEMS.find((item) => item.to === pathname)
   return match ? match.label : 'Page not found'
 }

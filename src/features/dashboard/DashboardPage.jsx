@@ -190,7 +190,7 @@ export default function DashboardPage() {
             title="No habits yet"
             description="Create your first habit to start tracking your daily routine, streaks, and progress."
             actionLabel="Create your first habit"
-            actionTo="/habits"
+            actionTo="/habits/new"
             metricLabel="Today's completion rate"
             metricValue="—"
             metricHint="Shown as — when there are no eligible scheduled opportunities."
