@@ -28,7 +28,7 @@ Build and verify one phase at a time. Do not ask an AI coding agent to implement
 **Exit criteria:** Responsive dashboard is visually consistent in both themes.
 
 ## Phase 3 — Habit management
-- Build create/edit/archive forms.
+- Build create, edit, and archive/restore UI.
 - Add frequency and target configuration.
 - Add validation and reusable habit components.
 - Store habits in memory only during Phase 3 (no persistence; Firestore integration comes in Phase 5).

@@ -207,6 +207,18 @@ export function updateHabitScheduleOrTarget(
     }
   }
 
+  if (habit.endDate != null) {
+    parseDateKey(habit.endDate)
+    if (habit.endDate < todayKey) {
+      return {
+        ok: false,
+        errors: {
+          form: 'This habit has ended. Extend or clear its end date to change its schedule or target.',
+        },
+      }
+    }
+  }
+
   const changeInput = changes && typeof changes === 'object' ? changes : {}
   const disallowed = findDisallowedKeys(changeInput, SCHEDULE_TARGET_KEYS)
   if (disallowed.length > 0) {

@@ -46,6 +46,7 @@ A user can:
 - Choose a daily schedule or selected weekdays (`mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`, week starting Monday).
 - Set a measurable numeric target, such as 60 minutes or 2 problems, or use a simple-completion (`boolean`) target (optionally with display-only `targetTimeLabel`).
 - Edit metadata (`name`, `description`, `category`, `icon`, `targetTimeLabel`) without versioning, or update schedule/target as an effective-dated version (`effectiveFrom` = today's local date key, replacing in place on same-day or future-`startDate` edits) without altering past history or logs.
+- Archived habits cannot be edited until restored.
 - Mark a scheduled habit as completed for a date.
 - Correct a completion record when an honest mistake was made.
 

@@ -46,7 +46,7 @@ DisciplineX is a personal productivity and habit-tracking web application. The f
 
 ## Getting started
 
-The initial development phase created the Vite application, installed the agreed Phase 1 dependencies, and established routing, theme handling, and the reusable layout. Firestore and feature implementations are intentionally left for later phases.
+The Phase 1 foundation, Phase 2 mock Dashboard UI, and Phase 3 in-memory Habit management are implemented. Firebase Authentication, Cloud Firestore persistence, and remaining modules are intentionally left for later phases.
 
 ```bash
 npm install

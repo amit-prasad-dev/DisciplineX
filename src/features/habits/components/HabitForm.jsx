@@ -127,12 +127,29 @@ export default function HabitForm({
 
   const errorSummaryItems = getErrorSummaryItems(errors, visibleFieldIds)
 
-  const scheduleChangeNote =
-    isEditMode && pendingEditUpdate?.scheduleTarget
-      ? habit.startDate > todayKey
-        ? `Schedule and target changes apply from its start date (${formatDateKeyForDisplay(habit.startDate)}).`
-        : `Schedule and target changes apply from today (${formatDateKeyForDisplay(todayKey)}). Earlier days keep their previous schedule and target.`
-      : ''
+  const effectiveEndDateAfterForm =
+    isEditMode &&
+    pendingEditUpdate?.dates &&
+    'endDate' in pendingEditUpdate.dates
+      ? pendingEditUpdate.dates.endDate
+      : (habit?.endDate ?? null)
+
+  const isEndedWithoutExtension =
+    isEditMode &&
+    effectiveEndDateAfterForm !== null &&
+    effectiveEndDateAfterForm < todayKey
+
+  let scheduleChangeNote = ''
+  if (isEditMode && pendingEditUpdate?.scheduleTarget) {
+    if (isEndedWithoutExtension) {
+      scheduleChangeNote =
+        'This habit has ended. Extend or clear its end date to change its schedule or target.'
+    } else if (habit.startDate > todayKey) {
+      scheduleChangeNote = `Schedule and target changes apply from its start date (${formatDateKeyForDisplay(habit.startDate)}).`
+    } else {
+      scheduleChangeNote = `Schedule and target changes apply from today (${formatDateKeyForDisplay(todayKey)}). Earlier days keep their previous schedule and target.`
+    }
+  }
 
   const timeLabelRemovalNote =
     isEditMode &&

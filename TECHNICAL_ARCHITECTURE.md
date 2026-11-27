@@ -55,12 +55,15 @@ src/
   features/
     dashboard/
     habits/
+      components/
     dailyTracking/
     calendar/
     challenges/
     analytics/
     settings/
   context/
+    HabitsContext.jsx   # temporary in-memory store until Phase 5
+    ThemeContext.jsx
   hooks/
   services/
     firebase/
@@ -73,6 +76,8 @@ src/
 ```
 
 The structure may be adjusted as the project grows. Avoid creating empty folders for features that are not yet being built.
+
+Current application routes: `/` (Dashboard), `/habits` (My Habits), `/habits/new` (New habit), `/habits/:habitId/edit` (Edit habit), `/daily-tracker`, `/calendar`, `/challenges`, `/analytics`, `/settings`, and `*` (Not found).
 
 ## 4. Separation of responsibilities
 

@@ -54,9 +54,13 @@ The longest streak is the highest number of consecutive completed scheduled oppo
 - Changing only `name`, `description`, `category`, `icon`, or `targetTimeLabel` updates the habit in place and does not create a new version.
 - Changing schedule (`frequencyType` / `scheduledWeekdays`) or target (`targetType` / `targetValue` / `targetUnit`) uses `effectiveFrom` equal to today's local date key (`YYYY-MM-DD`; no backdating and no future `effectiveFrom` in MVP). If `effectiveFrom` equals the latest version's `effectiveFrom`, or if `startDate` is in the future, that version is replaced in place; otherwise a new effective-dated version is added while earlier versions remain intact. Today's evaluation uses the new version (today is still open).
 - `startDate` is editable only while it is in the future (read-only after it has passed); editing `startDate` also moves the initial version's `effectiveFrom`.
+- A new `endDate` cannot be set earlier than today (`< today`), while an untouched existing past `endDate` may remain when editing details.
+- Schedule and target changes are rejected when `endDate` is set and `endDate < today`, unless `endDate` is extended (`>= today`) or cleared (`null`) in the same save.
+- Switching a habit's `targetType` from `boolean` to `numeric` automatically clears `targetTimeLabel` to `null`.
 - Any past date is evaluated using the latest version whose `effectiveFrom <= date`. Past history, logs, and streak inputs must never be rewritten by an edit.
 - Time-based habits (for example, `"Wake up early, 5:00 AM"`) use the simple-completion (`boolean`) target type plus an optional display-only `targetTimeLabel` text field (meaningful only for `boolean`-target habits). The system does not verify completion time, and a real `time` target type is out of MVP scope.
 - Archiving a habit prevents it from appearing in future active checklists.
+- Archived habits cannot be edited until restored.
 - Archiving must preserve all daily logs and historical analytics.
 - Deleting a habit permanently should not be offered in the MVP unless a deliberate data-deletion flow is implemented.
 

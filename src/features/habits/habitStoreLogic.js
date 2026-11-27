@@ -162,8 +162,9 @@ export function updateHabitInList(
 
     const mergedErrors = {}
 
+    let datesCheck = null
     if (hasDates) {
-      const datesCheck = updateHabitDates(originalHabit, dates, {
+      datesCheck = updateHabitDates(originalHabit, dates, {
         todayKey,
         now,
       })
@@ -174,8 +175,11 @@ export function updateHabitInList(
 
     let scheduleTargetCheck = null
     if (hasScheduleTarget) {
+      const scheduleTargetBaseHabit = datesCheck?.ok
+        ? datesCheck.habit
+        : originalHabit
       scheduleTargetCheck = updateHabitScheduleOrTarget(
-        originalHabit,
+        scheduleTargetBaseHabit,
         scheduleTarget,
         { todayKey, now },
       )

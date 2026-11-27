@@ -57,7 +57,7 @@ Suggested fields:
 - `createdAt`: timestamp
 - `updatedAt`: timestamp
 
-Changing `name`, `description`, `category`, `icon`, or `targetTimeLabel` updates metadata in place without creating a new version. Changing schedule (`frequencyType`, `scheduledWeekdays`) or target (`targetType`, `targetValue`, `targetUnit`) uses `effectiveFrom` equal to today's local date key (`YYYY-MM-DD`; no backdating or future `effectiveFrom` in MVP). If `effectiveFrom` matches the current latest version's `effectiveFrom`, or if `startDate` is still in the future, that version is replaced in place; otherwise a new version is appended. Today's evaluation uses the new version (today is still open), while past dates evaluate against the latest version where `effectiveFrom <= date` without rewriting prior versions or recalculating historical logs.
+Changing `name`, `description`, `category`, `icon`, or `targetTimeLabel` updates metadata in place without creating a new version. Changing schedule (`frequencyType`, `scheduledWeekdays`) or target (`targetType`, `targetValue`, `targetUnit`) uses `effectiveFrom` equal to today's local date key (`YYYY-MM-DD`; no backdating or future `effectiveFrom` in MVP); switching `targetType` from `boolean` to `numeric` clears `targetTimeLabel` to `null`. If `effectiveFrom` matches the current latest version's `effectiveFrom`, or if `startDate` is still in the future, that version is replaced in place; otherwise a new version is appended. Today's evaluation uses the new version (today is still open), while past dates evaluate against the latest version where `effectiveFrom <= date` without rewriting prior versions or recalculating historical logs.
 
 ## 5. Daily log document
 

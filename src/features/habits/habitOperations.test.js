@@ -420,6 +420,38 @@ describe('updateHabitScheduleOrTarget', () => {
       ),
     ).toThrow()
   })
+
+  it('rejects schedule/target changes when endDate is before todayKey, and allows editing when endDate equals todayKey', () => {
+    const endedHabit = createHabit(
+      { ...BASE_INPUT, endDate: '2026-11-26' },
+      { id: 'habit-ended', now: '2026-11-10T06:00:00Z' },
+    ).habit
+    const endedSnapshot = deepClone(endedHabit)
+
+    const rejected = updateHabitScheduleOrTarget(
+      endedHabit,
+      { targetValue: 90 },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(rejected.ok).toBe(false)
+    expect(rejected.errors.form).toBeTruthy()
+    expect(endedHabit).toEqual(endedSnapshot)
+
+    const endsTodayHabit = createHabit(
+      { ...BASE_INPUT, endDate: '2026-11-27' },
+      { id: 'habit-ends-today', now: '2026-11-10T06:00:00Z' },
+    ).habit
+
+    const allowed = updateHabitScheduleOrTarget(
+      endsTodayHabit,
+      { targetValue: 90 },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(allowed.ok).toBe(true)
+    expect(allowed.habit.versions).toHaveLength(2)
+    expect(allowed.habit.versions[1].effectiveFrom).toBe('2026-11-27')
+    expect(allowed.habit.versions[1].targetValue).toBe(90)
+  })
 })
 
 describe('updateHabitDates', () => {

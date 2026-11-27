@@ -372,14 +372,25 @@ describe('updateHabitInList (atomic multi-group update)', () => {
     expect(list).toEqual(snapshot)
   })
 
-  it('allows extending a past endDate and updating scheduleTarget in the same save because dates apply first', () => {
+  it('allows extending or clearing a past endDate with a scheduleTarget change in the same save, and rejects scheduleTarget alone on an ended habit', () => {
     const endedList = createHabitInList(
       [],
       { ...JAVA_INPUT, endDate: '2026-11-20' },
       { id: 'h-ended', now: '2026-11-10T06:00:00Z' },
     ).habits
+    const endedSnapshot = deepClone(endedList)
 
-    const result = updateHabitInList(
+    const rejectedAlone = updateHabitInList(
+      endedList,
+      'h-ended',
+      { scheduleTarget: { targetValue: 75 } },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(rejectedAlone.ok).toBe(false)
+    expect(rejectedAlone.errors.form).toBeTruthy()
+    expect(endedList).toEqual(endedSnapshot)
+
+    const extendedResult = updateHabitInList(
       endedList,
       'h-ended',
       {
@@ -388,10 +399,24 @@ describe('updateHabitInList (atomic multi-group update)', () => {
       },
       { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
     )
+    expect(extendedResult.ok).toBe(true)
+    expect(extendedResult.habit.endDate).toBe('2026-12-15')
+    expect(extendedResult.habit.versions).toHaveLength(2)
+    expect(extendedResult.habit.versions[1].targetValue).toBe(75)
 
-    expect(result.ok).toBe(true)
-    expect(result.habit.endDate).toBe('2026-12-15')
-    expect(result.habit.versions[1].targetValue).toBe(75)
+    const clearedResult = updateHabitInList(
+      endedList,
+      'h-ended',
+      {
+        dates: { endDate: null },
+        scheduleTarget: { targetValue: 80 },
+      },
+      { todayKey: '2026-11-27', now: '2026-11-27T09:00:00Z' },
+    )
+    expect(clearedResult.ok).toBe(true)
+    expect(clearedResult.habit.endDate).toBeNull()
+    expect(clearedResult.habit.versions).toHaveLength(2)
+    expect(clearedResult.habit.versions[1].targetValue).toBe(80)
   })
 
   it('rejects not-found IDs and archived habits', () => {
