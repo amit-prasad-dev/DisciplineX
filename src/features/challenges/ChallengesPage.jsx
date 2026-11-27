@@ -1,3 +1,3 @@
 export default function ChallengesPage() {
-  return <h1 className="text-2xl font-bold">Challenges</h1>
+  return <h1 className="text-2xl font-bold text-text">Challenges</h1>
 }

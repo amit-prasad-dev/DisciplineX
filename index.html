@@ -5,6 +5,31 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DisciplineX</title>
+    <script>
+      // Keep this initial theme resolution logic in sync with src/utils/theme.js.
+      ;(function () {
+        var preference = 'system'
+        try {
+          var stored = window.localStorage.getItem('disciplinex-theme')
+          if (stored === 'light' || stored === 'dark' || stored === 'system') {
+            preference = stored
+          }
+        } catch {
+          // Ignore storage access errors and fall back to system preference.
+        }
+
+        var systemPrefersDark =
+          typeof window.matchMedia === 'function' &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches
+        var effective =
+          preference === 'dark' || (preference === 'system' && systemPrefersDark)
+            ? 'dark'
+            : 'light'
+
+        document.documentElement.classList.toggle('dark', effective === 'dark')
+        document.documentElement.style.colorScheme = effective
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
