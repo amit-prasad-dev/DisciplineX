@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { formatLocalDate } from '../../utils/date.js'
 import SampleDataBanner from './SampleDataBanner.jsx'
+import StreakSummaryCard from './components/StreakSummaryCard.jsx'
+import TodayHabitsCard from './components/TodayHabitsCard.jsx'
+import TodayHeaderCard from './components/TodayHeaderCard.jsx'
+import TodayProgressCard from './components/TodayProgressCard.jsx'
+import { SAMPLE_HABITS, SAMPLE_SUMMARY } from './mockData.js'
 
 const VIEW_MODES = [
   { value: 'sample', label: 'Sample data' },
@@ -48,10 +53,18 @@ export default function DashboardPage() {
       {viewMode === 'sample' ? (
         <div className="space-y-4">
           <SampleDataBanner />
-          <p className="text-sm text-text-muted">
-            Temporary sample data infrastructure is ready. Dashboard cards will
-            be added in the next step.
-          </p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <TodayHeaderCard todayLabel={todayLabel} />
+            <TodayProgressCard
+              completedCount={SAMPLE_SUMMARY.sampleCompletedTodayCount}
+              totalCount={SAMPLE_SUMMARY.sampleActiveCount}
+            />
+            <StreakSummaryCard
+              currentStreakDays={SAMPLE_SUMMARY.sampleCurrentStreakDays}
+              longestStreakDays={SAMPLE_SUMMARY.sampleLongestStreakDays}
+            />
+            <TodayHabitsCard habits={SAMPLE_HABITS} />
+          </div>
         </div>
       ) : (
         <div className="rounded-lg border border-border bg-surface p-6">
