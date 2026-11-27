@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import { formatLocalDate } from '../../utils/date.js'
 import SampleDataBanner from './SampleDataBanner.jsx'
+import ActiveChallengeCard from './components/ActiveChallengeCard.jsx'
 import StreakSummaryCard from './components/StreakSummaryCard.jsx'
 import TodayHabitsCard from './components/TodayHabitsCard.jsx'
 import TodayHeaderCard from './components/TodayHeaderCard.jsx'
 import TodayProgressCard from './components/TodayProgressCard.jsx'
-import { SAMPLE_HABITS, SAMPLE_SUMMARY } from './mockData.js'
+import WeeklyOverviewCard from './components/WeeklyOverviewCard.jsx'
+import {
+  SAMPLE_ACTIVE_CHALLENGE,
+  SAMPLE_HABITS,
+  SAMPLE_SUMMARY,
+  SAMPLE_WEEKLY_VALUES,
+} from './mockData.js'
 
 const VIEW_MODES = [
   { value: 'sample', label: 'Sample data' },
@@ -63,6 +70,8 @@ export default function DashboardPage() {
               currentStreakDays={SAMPLE_SUMMARY.sampleCurrentStreakDays}
               longestStreakDays={SAMPLE_SUMMARY.sampleLongestStreakDays}
             />
+            <WeeklyOverviewCard days={SAMPLE_WEEKLY_VALUES} />
+            <ActiveChallengeCard challenge={SAMPLE_ACTIVE_CHALLENGE} />
             <TodayHabitsCard habits={SAMPLE_HABITS} />
           </div>
         </div>

@@ -57,11 +57,72 @@ export const SAMPLE_SUMMARY = {
 }
 
 export const SAMPLE_WEEKLY_VALUES = [
-  { dayLabel: 'Mon', sampleCompleted: 5, sampleScheduled: 6 },
-  { dayLabel: 'Tue', sampleCompleted: 6, sampleScheduled: 6 },
-  { dayLabel: 'Wed', sampleCompleted: 4, sampleScheduled: 6 },
-  { dayLabel: 'Thu', sampleCompleted: 6, sampleScheduled: 6 },
-  { dayLabel: 'Fri', sampleCompleted: 5, sampleScheduled: 6 },
-  { dayLabel: 'Sat', sampleCompleted: 4, sampleScheduled: 5 },
-  { dayLabel: 'Sun', sampleCompleted: 3, sampleScheduled: 6 },
+  {
+    id: 'sample-mon',
+    shortDay: 'Mon',
+    fullDay: 'Monday',
+    dateNumber: 23,
+    sampleState: 'completed',
+    isToday: false,
+  },
+  {
+    id: 'sample-tue',
+    shortDay: 'Tue',
+    fullDay: 'Tuesday',
+    dateNumber: 24,
+    sampleState: 'completed',
+    isToday: false,
+  },
+  {
+    id: 'sample-wed',
+    shortDay: 'Wed',
+    fullDay: 'Wednesday',
+    dateNumber: 25,
+    sampleState: 'missed',
+    isToday: false,
+  },
+  {
+    id: 'sample-thu',
+    shortDay: 'Thu',
+    fullDay: 'Thursday',
+    dateNumber: 26,
+    sampleState: 'not_scheduled',
+    isToday: false,
+  },
+  {
+    id: 'sample-fri',
+    shortDay: 'Fri',
+    fullDay: 'Friday',
+    dateNumber: 27,
+    sampleState: 'pending',
+    isToday: true,
+  },
+  {
+    id: 'sample-sat',
+    shortDay: 'Sat',
+    fullDay: 'Saturday',
+    dateNumber: 28,
+    sampleState: 'upcoming',
+    isToday: false,
+  },
+  {
+    id: 'sample-sun',
+    shortDay: 'Sun',
+    fullDay: 'Sunday',
+    dateNumber: 29,
+    sampleState: 'upcoming',
+    isToday: false,
+  },
 ]
+
+export const SAMPLE_ACTIVE_CHALLENGE = {
+  id: 'sample-60-day-consistency',
+  title: '60-Day Core Consistency',
+  sampleElapsedDays: 18,
+  durationDays: 60,
+  startDateLabel: 'Nov 10, 2026',
+  endDateLabel: 'Jan 8, 2027',
+  successRuleText:
+    'Complete all 6 scheduled daily habits for the day to count toward the challenge.',
+  sampleStatusLabel: 'In progress',
+}

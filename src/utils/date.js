@@ -1,4 +1,5 @@
 export const DEFAULT_TIME_ZONE = 'Asia/Kolkata'
+export const WEEK_START_DAY = 'Monday'
 
 /**
  * Format a Date for display in the specified IANA time zone using Intl.
