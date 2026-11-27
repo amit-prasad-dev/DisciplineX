@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router'
+import AppShell from '../components/layout/AppShell.jsx'
 import AnalyticsPage from '../features/analytics/AnalyticsPage.jsx'
 import CalendarPage from '../features/calendar/CalendarPage.jsx'
 import ChallengesPage from '../features/challenges/ChallengesPage.jsx'
@@ -11,14 +12,16 @@ import NotFoundPage from './NotFoundPage.jsx'
 export default function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<DashboardPage />} />
-      <Route path="/habits" element={<HabitsPage />} />
-      <Route path="/daily-tracker" element={<DailyTrackerPage />} />
-      <Route path="/calendar" element={<CalendarPage />} />
-      <Route path="/challenges" element={<ChallengesPage />} />
-      <Route path="/analytics" element={<AnalyticsPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      <Route path="*" element={<NotFoundPage />} />
+      <Route element={<AppShell />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/habits" element={<HabitsPage />} />
+        <Route path="/daily-tracker" element={<DailyTrackerPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/challenges" element={<ChallengesPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
     </Routes>
   )
 }
