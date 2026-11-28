@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseOwnerUidFromRules, validateRulesOwnerUid } from './rulesConfig.js'
 
@@ -98,11 +96,5 @@ describe('validateRulesOwnerUid', () => {
       ok: true,
       uid,
     })
-  })
-
-  it('currently rejects the repository firestore.rules while it holds the placeholder', () => {
-    const rulesPath = path.resolve(process.cwd(), 'firestore.rules')
-    const rulesText = readFileSync(rulesPath, 'utf8')
-    expect(validateRulesOwnerUid(rulesText).ok).toBe(false)
   })
 })

@@ -34,7 +34,7 @@ Test:
 
 ## 4. Service/integration tests
 
-Where practical, use Firebase Emulator Suite (via a separate `npm run test:rules` script using `@firebase/rules-unit-testing` so plain `npm test` does not require Java or the emulator; check the required Java version in current Firebase docs) for:
+Where practical, use Firebase Emulator Suite (via a separate `npm run test:rules` script using `@firebase/rules-unit-testing` so plain `npm test` does not require Java or the emulator; requires Java JDK 11+ baseline, or Java 21+ for current Cloud Firestore emulator releases — re-check the current Firebase docs when installing) for:
 - Authentication-dependent operations.
 - Firestore reads and writes.
 - Security Rules tests.
@@ -67,7 +67,8 @@ Do not rely only on UI hiding to prove data security.
 Before each milestone:
 1. Run lint (`npm run lint` via `oxlint`).
 2. Run relevant tests (`npm test` via `vitest run`).
-3. Run production build (`npm run build` via `vite build`).
-4. Review browser console.
-5. Review changed files and Git diff.
-6. Record known limitations.
+3. When Security Rules change, run `npm run check:rules` and `npm run test:rules`.
+4. Run production build (`npm run build` via `vite build`).
+5. Review browser console.
+6. Review changed files and Git diff.
+7. Record known limitations.

@@ -59,7 +59,7 @@ Future public release:
 
 ## 6. Testing
 
-Run automated rules tests against the local Firestore emulator using `@firebase/rules-unit-testing` via a separate script (`npm run test:rules`) so plain `npm test` never requires Java or the emulator (check the required Java version in current Firebase docs when setting up).
+Run automated rules tests against the local Firestore emulator using `@firebase/rules-unit-testing` via a separate script (`npm run test:rules`) so plain `npm test` never requires Java or the emulator (requires Java JDK 11+ baseline, or Java 21+ for current Cloud Firestore emulator releases — re-check the current Firebase docs when installing). Validate `firestore.rules` before deploying with `npm run check:rules` (and deploy via `npm run deploy:rules`).
 
 Before deployment, test:
 - Unauthenticated read is denied.

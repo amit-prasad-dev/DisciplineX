@@ -53,6 +53,13 @@ src/
     calendar/
     challenges/
   features/
+    auth/
+      authController.js
+      authGate.js
+      authLogic.js
+      ConfigErrorPage.jsx
+      NoAccessPage.jsx
+      SignInPage.jsx
     dashboard/
     habits/
       components/
@@ -62,22 +69,33 @@ src/
     analytics/
     settings/
   context/
+    AuthContext.jsx
     HabitsContext.jsx   # temporary in-memory store until Phase 5
     ThemeContext.jsx
   hooks/
+    useAuth.js
+    useHabits.js
+    useTheme.js
   services/
     firebase/
+      firebaseApp.js
+      firebaseAuth.js
+      firebaseConfig.js
+      ownerConfig.js
     habits/
     dailyLogs/
     challenges/
   utils/
   styles/
   main.jsx
+tests/
+  rules/
+    firestore.rules.test.js   # excluded from default npm test via vite.config.js
 ```
 
 The structure may be adjusted as the project grows. Avoid creating empty folders for features that are not yet being built.
 
-Current application routes: `/` (Dashboard), `/habits` (My Habits), `/habits/new` (New habit), `/habits/:habitId/edit` (Edit habit), `/daily-tracker`, `/calendar`, `/challenges`, `/analytics`, `/settings`, and `*` (Not found).
+Current application routes: `/sign-in` (outside `AppShell`), `/` (Dashboard), `/habits` (My Habits), `/habits/new` (New habit), `/habits/:habitId/edit` (Edit habit), `/daily-tracker`, `/calendar`, `/challenges`, `/analytics`, `/settings`, and `*` (Not found).
 
 ## 4. Separation of responsibilities
 

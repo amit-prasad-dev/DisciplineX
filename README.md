@@ -47,35 +47,45 @@ DisciplineX is a personal productivity and habit-tracking web application. The f
 
 ## Getting started
 
-The Phase 1 foundation, Phase 2 mock Dashboard UI, and Phase 3 in-memory Habit management are implemented. Firebase Authentication, Cloud Firestore persistence, and remaining modules are intentionally left for later phases.
+The Phase 1 foundation, Phase 2 mock Dashboard UI, Phase 3 in-memory Habit management, and Phase 4 Firebase foundation + Google authentication are implemented. Habits stay memory-only until Phase 5; Cloud Firestore persistence and remaining modules are intentionally left for later phases.
 
 ```bash
 npm install
-npm run dev      # Start local Vite dev server
-npm run lint     # Run oxlint
-npm test         # Run Vitest once (vitest run)
-npm run build    # Build production bundle to dist/
-npm run preview  # Preview the production build locally
+npm run dev          # Start local Vite dev server
+npm run lint         # Run oxlint
+npm test             # Run Vitest once (vitest run; excludes emulator rules tests)
+npm run build        # Build production bundle to dist/
+npm run preview      # Preview the production build locally
 ```
 
 ### Environment setup
 
 1. Copy `.env.example` to `.env.local`.
-2. Fill in the `VITE_FIREBASE_*` values from your Firebase Console Web App settings (and `VITE_OWNER_UID` after your first Google sign-in).
-3. Never commit `.env.local` or any real `.env` file.
+2. Fill in the `VITE_FIREBASE_*` values from your Firebase Console Web App settings (missing or placeholder values show the `"App configuration needed"` screen).
+3. Set `VITE_OWNER_UID` (optional during initial local bootstrap: in `npm run dev`, signing in before `VITE_OWNER_UID` is set shows a dev-only UID helper on `"This account doesn't have access yet"`).
+4. Never commit `.env.local` or any real `.env` file.
+
+### Setting up on a new machine
+
+1. Clone the repository and run `npm ci`.
+2. Copy `.env.example` to `.env.local`.
+3. Fill in the `VITE_FIREBASE_*` values from Firebase Console > Project settings.
+4. Set `VITE_OWNER_UID` to the owner UID that appears in `firestore.rules`.
+5. Run `npm run dev` and sign in with Google.
 
 ### Security rules
 
-Run Firestore Security Rules tests against the local Firestore emulator (requires Java and the local `firebase-tools` devDependency):
+Run Firestore Security Rules tests against the local Firestore emulator (requires Java JDK 11+ baseline, or Java 21+ for current Cloud Firestore emulator releases — re-check the current Firebase docs when installing — plus the local `firebase-tools` devDependency):
 
 ```bash
 npm run test:rules
 ```
 
-Before deploying rules, verify `firestore.rules` has a real owner UID instead of the placeholder:
+Before deploying rules, verify `firestore.rules` has a real owner UID instead of the placeholder, then deploy rules only:
 
 ```bash
 npm run check:rules
+npm run deploy:rules
 ```
 
 ## Product principles
