@@ -131,7 +131,7 @@ describe('createHabitsService', () => {
     expect(fns.setDoc.mock.calls[0][1]).toEqual(habitToDocument(habit))
   })
 
-  it('saveHabit validates the mapped document before calling setDoc and throws on programmer errors', async () => {
+  it('saveHabit validates the mapped document before calling setDoc and throws on programmer errors with code "invalid-habit-document"', async () => {
     const badHabit = {
       ...makeHabit({
         id: 'h-bad',
@@ -141,9 +141,15 @@ describe('createHabitsService', () => {
     }
     const { fns, service } = createFakeFirestoreHarness()
 
-    await expect(service.saveHabit('owner-1', badHabit)).rejects.toThrowError(
-      /invalid-description/,
-    )
+    let caught = null
+    try {
+      await service.saveHabit('owner-1', badHabit)
+    } catch (error) {
+      caught = error
+    }
+    expect(caught).toBeInstanceOf(Error)
+    expect(caught.code).toBe('invalid-habit-document')
+    expect(caught.message).toMatch(/invalid-description/)
     expect(fns.setDoc).not.toHaveBeenCalled()
   })
 
@@ -165,7 +171,7 @@ describe('createHabitsService', () => {
   })
 
   it.each(['', '   ', 'uid/slash', 'uid space', null, undefined])(
-    'rejects invalid uid (%s) across all service methods',
+    'rejects invalid uid (%s) with code "invalid-argument-local" across all service methods',
     async (badUid) => {
       const { service } = createFakeFirestoreHarness()
       const habit = makeHabit({
@@ -173,18 +179,25 @@ describe('createHabitsService', () => {
         createdAt: '2026-05-01T08:00:00.000Z',
       })
 
-      expect(() => service.newHabitId(badUid)).toThrowError(/Invalid uid/)
-      await expect(service.loadHabits(badUid)).rejects.toThrowError(
-        /Invalid uid/,
-      )
-      await expect(service.saveHabit(badUid, habit)).rejects.toThrowError(
-        /Invalid uid/,
-      )
+      try {
+        service.newHabitId(badUid)
+        expect.unreachable()
+      } catch (error) {
+        expect(error.code).toBe('invalid-argument-local')
+        expect(error.message).toMatch(/Invalid uid/)
+      }
+
+      await expect(service.loadHabits(badUid)).rejects.toMatchObject({
+        code: 'invalid-argument-local',
+      })
+      await expect(service.saveHabit(badUid, habit)).rejects.toMatchObject({
+        code: 'invalid-argument-local',
+      })
     },
   )
 
   it.each(['', '   ', 'id/slash', 'id space', null, undefined])(
-    'rejects invalid habit id (%s) in saveHabit',
+    'rejects invalid habit id (%s) with code "invalid-argument-local" in saveHabit',
     async (badId) => {
       const { service } = createFakeFirestoreHarness()
       const habit = makeHabit({
@@ -194,7 +207,9 @@ describe('createHabitsService', () => {
 
       await expect(
         service.saveHabit('owner-1', { ...habit, id: badId }),
-      ).rejects.toThrowError(/Invalid habit\.id/)
+      ).rejects.toMatchObject({
+        code: 'invalid-argument-local',
+      })
     },
   )
 

@@ -22,6 +22,8 @@ export function generateHabitId(cryptoObj = globalThis.crypto) {
   return `habit-${Date.now()}-${fallbackIdCounter}`
 }
 
+export const MAX_HABITS_PER_USER = 100
+
 export function findHabitById(habits, habitId) {
   return habits.find((habit) => habit.id === habitId) ?? null
 }
@@ -34,7 +36,20 @@ export function selectArchivedHabits(habits) {
   return habits.filter((habit) => habit.status === HABIT_STATUSES.ARCHIVED)
 }
 
-export function createHabitInList(habits, input, { id, now }) {
+export function createHabitInList(
+  habits,
+  input,
+  { id, now, invalidCount = 0 },
+) {
+  if (habits.length + invalidCount >= MAX_HABITS_PER_USER) {
+    return {
+      ok: false,
+      habits,
+      habit: null,
+      errors: { form: `You've reached the limit of ${MAX_HABITS_PER_USER} habits.` },
+    }
+  }
+
   const result = createHabit(input, { id, now })
   if (!result.ok) {
     return { ok: false, habits, habit: null, errors: result.errors }

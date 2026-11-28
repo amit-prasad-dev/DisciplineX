@@ -1,6 +1,12 @@
 import { validateStoredHabitDocument } from '../../features/habits/habitValidation.js'
 import { documentToHabit, habitToDocument } from './habitDocument.js'
 
+function createServiceError(code, message) {
+  const error = new Error(message)
+  error.code = code
+  return error
+}
+
 function assertSafePathSegment(value, label) {
   if (
     typeof value !== 'string' ||
@@ -8,7 +14,8 @@ function assertSafePathSegment(value, label) {
     value.includes('/') ||
     /\s/.test(value)
   ) {
-    throw new Error(
+    throw createServiceError(
+      'invalid-argument-local',
       `Invalid ${label}: expected a non-empty string without spaces or "/".`,
     )
   }
@@ -82,7 +89,8 @@ export function createHabitsService({ db, fns }) {
     const payload = habitToDocument(habit)
     const validation = validateStoredHabitDocument(habit.id, payload)
     if (!validation.ok) {
-      throw new Error(
+      throw createServiceError(
+        'invalid-habit-document',
         `Refusing to save invalid habit document (${validation.reason}).`,
       )
     }

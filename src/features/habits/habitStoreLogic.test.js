@@ -4,6 +4,7 @@ import {
   createHabitInList,
   findHabitById,
   generateHabitId,
+  MAX_HABITS_PER_USER,
   restoreHabitInList,
   selectActiveHabits,
   selectArchivedHabits,
@@ -446,5 +447,47 @@ describe('updateHabitInList (atomic multi-group update)', () => {
     )
     expect(editArchived.ok).toBe(false)
     expect(editArchived.errors.form).toBeTruthy()
+  })
+
+  it('enforces MAX_HABITS_PER_USER (100) including invalidCount', () => {
+    const ninetyNineHabits = Array.from(
+      { length: MAX_HABITS_PER_USER - 1 },
+      (_, i) =>
+        createHabitInList([], JAVA_INPUT, {
+          id: `h-${i}`,
+          now: '2026-11-10T06:00:00Z',
+        }).habit,
+    )
+
+    const allowed99 = createHabitInList(ninetyNineHabits, JAVA_INPUT, {
+      id: 'h-99',
+      now: '2026-11-10T06:00:00Z',
+    })
+    expect(allowed99.ok).toBe(true)
+    expect(allowed99.habits).toHaveLength(100)
+
+    const rejected100 = createHabitInList(allowed99.habits, JAVA_INPUT, {
+      id: 'h-100',
+      now: '2026-11-10T06:00:00Z',
+    })
+    expect(rejected100.ok).toBe(false)
+    expect(rejected100.habits).toBe(allowed99.habits)
+    expect(rejected100.errors.form).toBe("You've reached the limit of 100 habits.")
+
+    const ninetyEightHabits = ninetyNineHabits.slice(0, 98)
+    const rejectedWithInvalidCount = createHabitInList(
+      ninetyEightHabits,
+      JAVA_INPUT,
+      {
+        id: 'h-invalid-cap',
+        now: '2026-11-10T06:00:00Z',
+        invalidCount: 2,
+      },
+    )
+    expect(rejectedWithInvalidCount.ok).toBe(false)
+    expect(rejectedWithInvalidCount.habits).toBe(ninetyEightHabits)
+    expect(rejectedWithInvalidCount.errors.form).toBe(
+      "You've reached the limit of 100 habits.",
+    )
   })
 })
