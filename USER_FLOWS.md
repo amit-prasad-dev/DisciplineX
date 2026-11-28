@@ -15,8 +15,8 @@ Future navigation items (Study, Fitness, Journal) should be added only when thos
 ## Flow 1: First-time setup
 
 1. User opens DisciplineX.
-2. All routes are gated behind `/sign-in`: user signs in with Google (`signInWithPopup`); non-allowlisted accounts see `"This account doesn't have access yet"` with Sign out; signing out clears in-memory data.
-3. User sees an onboarding/empty dashboard.
+2. All routes are gated behind `/sign-in`: user signs in with Google (`signInWithPopup`); non-allowlisted accounts see `"This account doesn't have access yet"` with Sign out; signing out unmounts in-memory habit state (Firestore uses default memory cache with no disk persistence; SDK in-memory cache lives for the page session).
+3. On first sign-in, `users/{uid}/profile/main` is initialized if missing (`timeZone` default `Asia/Kolkata`, `schemaVersion: 1`). Before Phase 6/7 daily tracking is added, Dashboard shows today's date and active habits scheduled today (name and target only) with `"—"` on progress, streak, weekly overview, and challenge cards, or an empty state if there are no habits yet.
 4. User creates their first habit.
 5. User chooses its category (controlled list; MVP values: `Learning`, `Fitness`, `Personal`, `Health`; configurable categories may come later), schedule (daily or selected Monday–Sunday weekdays `mon`–`sun`), target (simple completion with optional display-only `targetTimeLabel` meaningful only for `boolean`-target habits, or numeric value + unit), and start date.
 6. The habit appears on the dashboard on dates when it is scheduled.

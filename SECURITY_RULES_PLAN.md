@@ -22,13 +22,15 @@ A user must never be able to supply another UID and read or modify that user's d
 ## 3. Validation
 
 Rules should validate, as appropriate:
-- Required fields and allowed field names.
-- Allowed enum values.
-- Field types.
-- String and array size limits.
+- Required fields and allowed field names (`schemaVersion == 1`; habit documents do not include an `id` field).
+- Allowed enum values (`category`, `status`).
+- Field types (`YYYY-MM-DD` date-key format where applicable).
+- String and array size limits (`1 <= versions.size() <= 400` on habits; note rules cannot iterate over every element of `versions`, so per-version item validation stays in the app/domain layer, and the `100`-habit-per-user cap is app-side only since rules cannot count documents).
 - Numeric values and positive durations.
-- Immutable ownership/path identity.
-- Creation/update timestamps where practical.
+- Immutable ownership/path identity (`createdAt` immutable after creation).
+- Client-generated ISO 8601 `createdAt`/`updatedAt` audit strings.
+
+Habit deletion is denied in `firestore.rules` (`allow delete: if false;` — habits are archived, never deleted; documents created during development can only be deleted in the Firebase Console). Phase 5 rules validation and emulator tests must be updated and deployed before the app begins writing to Firestore.
 
 Client-side validation improves usability but does not replace server-enforced rules.
 
@@ -39,11 +41,12 @@ Initial private release:
 - Enforce personal-use access in `firestore.rules` via the allowlisted owner Firebase UID (no Cloud Functions and no Identity Platform blocking functions).
 - Compare `user.uid` against `VITE_OWNER_UID` (`.env.local`) for client-side UX only (`firestore.rules` remains the real security boundary), showing a neutral `"This account doesn't have access yet"` page with a `"Sign out"` button and loading no data when non-allowlisted.
 - Do not hard-code credentials.
-- Provide sign-out and clear in-memory client state (including Phase 3 habits) on sign-out so one user's data never stays visible to the next sign-in.
+- Provide sign-out (`AuthProvider` / `HabitsProvider` unmount clears app state; Firestore uses its default memory cache with no persistent disk cache so nothing remains on disk, while the SDK's in-memory cache lives only for the page session — acceptable for the owner-only MVP).
 - Handle expired sessions and authentication errors.
 
 Future public release:
 - Remove or replace the temporary owner UID allowlist in Security Rules.
+- Terminate the Firestore instance or reload the page on sign-out so the SDK's in-memory cache cannot carry across users.
 - Add a tested registration and account recovery flow.
 - Consider email verification and abuse protections.
 - Add account deletion and data export processes.
@@ -67,7 +70,7 @@ Before deployment, test:
 - Signed-in user whose UID is not the allowlisted owner UID is denied.
 - User A cannot read User B's data.
 - User A cannot create data under User B's path.
-- Invalid document shapes are rejected.
+- Invalid document shapes are rejected and habit document deletion (`deleteDoc`) is denied (Phase 5 rules tests update Phase 4's dummy payloads to valid schemas).
 - Valid owner operations succeed.
 
 ## 7. Deployment gate

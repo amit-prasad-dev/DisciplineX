@@ -36,8 +36,9 @@ Test:
 
 Where practical, use Firebase Emulator Suite (via a separate `npm run test:rules` script using `@firebase/rules-unit-testing` so plain `npm test` does not require Java or the emulator; requires Java JDK 11+ baseline, or Java 21+ for current Cloud Firestore emulator releases — re-check the current Firebase docs when installing) for:
 - Authentication-dependent operations.
+- Pure Firestore document mapping, malformed-document isolation, 100-habit cap, and async store/late-response unit tests.
 - Firestore reads and writes.
-- Security Rules tests.
+- Security Rules tests (`profile` & `habits` schema validation, `schemaVersion == 1`, `1 <= versions.size() <= 400`, and habit deletion denial; Phase 5 updates Phase 4 dummy-payload tests to valid schemas).
 - Invalid document rejection.
 - Non-allowlisted UID rejection (temporary MVP owner allowlist).
 - Cross-user access denial.
@@ -49,6 +50,8 @@ Do not rely only on UI hiding to prove data security.
 - [ ] App loads on desktop and mobile.
 - [ ] Light, dark, and system themes work.
 - [ ] Habit can be created, edited, and archived.
+- [ ] Habits and profile persist after reload (`createdAt` asc / `id` asc order), and failed offline saves keep typed input with a neutral error.
+- [ ] Dashboard lists real active habits scheduled today (name/target only) with `"—"` on progress/streak/weekly/challenge cards until Phase 6/7.
 - [ ] Habit completion persists after reload.
 - [ ] Completion can be corrected.
 - [ ] Past dates show correct records.
