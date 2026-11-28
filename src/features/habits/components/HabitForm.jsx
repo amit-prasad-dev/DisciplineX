@@ -35,7 +35,15 @@ export default function HabitForm({
   const [submitFailureCount, setSubmitFailureCount] = useState(0)
 
   const submitLockRef = useRef(false)
+  const mountedRef = useRef(false)
   const errorSummaryRef = useRef(null)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (submitFailureCount > 0) {
@@ -89,7 +97,7 @@ export default function HabitForm({
     })
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     if (submitLockRef.current) {
       return
@@ -112,17 +120,25 @@ export default function HabitForm({
     setIsSubmitting(true)
     setNoChangesMessage('')
 
-    const result = onSubmit(formValues, todayKey)
+    try {
+      const result = await onSubmit(formValues, todayKey)
+      if (!mountedRef.current) {
+        return
+      }
 
-    if (result.ok) {
-      onSuccess(result.habit)
-      return
+      if (result.ok) {
+        onSuccess(result.habit)
+        return
+      }
+
+      setErrors(result.errors)
+      setSubmitFailureCount((count) => count + 1)
+    } finally {
+      submitLockRef.current = false
+      if (mountedRef.current) {
+        setIsSubmitting(false)
+      }
     }
-
-    submitLockRef.current = false
-    setIsSubmitting(false)
-    setErrors(result.errors)
-    setSubmitFailureCount((count) => count + 1)
   }
 
   const errorSummaryItems = getErrorSummaryItems(errors, visibleFieldIds)
@@ -682,9 +698,13 @@ export default function HabitForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          {isEditMode ? 'Save changes' : 'Create habit'}
+          {isSubmitting
+            ? 'Saving…'
+            : isEditMode
+              ? 'Save changes'
+              : 'Create habit'}
         </button>
 
         <Link
@@ -693,6 +713,10 @@ export default function HabitForm({
         >
           Cancel
         </Link>
+      </div>
+
+      <div role="status" aria-live="polite" className="sr-only">
+        {isSubmitting ? 'Saving…' : ''}
       </div>
     </form>
   )

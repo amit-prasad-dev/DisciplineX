@@ -9,7 +9,14 @@ import {
 import { Link } from 'react-router'
 import { getHabitDisplayInfo } from '../habitDisplay.js'
 
-export default function HabitCard({ habit, todayKey, onArchive, onRestore }) {
+export default function HabitCard({
+  habit,
+  todayKey,
+  onArchive,
+  onRestore,
+  isMutatingDisabled = false,
+  pendingAction = null,
+}) {
   const display = getHabitDisplayInfo(habit, todayKey)
   const isArchived = habit.status === 'archived'
   const StatusIcon = isArchived ? Archive : CheckCircle2
@@ -96,12 +103,17 @@ export default function HabitCard({ habit, todayKey, onArchive, onRestore }) {
         {isArchived ? (
           <button
             type="button"
-            aria-label={`Restore ${habit.name}`}
+            disabled={isMutatingDisabled}
+            aria-label={
+              pendingAction === 'restore'
+                ? `Restoring ${habit.name}`
+                : `Restore ${habit.name}`
+            }
             onClick={() => onRestore(habit)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface-subtle px-3.5 py-2 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface-subtle px-3.5 py-2 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:opacity-60 disabled:cursor-not-allowed motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <RotateCcw size={15} strokeWidth={2} aria-hidden="true" />
-            <span>Restore</span>
+            <span>{pendingAction === 'restore' ? 'Restoring…' : 'Restore'}</span>
           </button>
         ) : (
           <>
@@ -115,12 +127,17 @@ export default function HabitCard({ habit, todayKey, onArchive, onRestore }) {
             </Link>
             <button
               type="button"
-              aria-label={`Archive ${habit.name}`}
+              disabled={isMutatingDisabled}
+              aria-label={
+                pendingAction === 'archive'
+                  ? `Archiving ${habit.name}`
+                  : `Archive ${habit.name}`
+              }
               onClick={() => onArchive(habit)}
-              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface-subtle px-3.5 py-2 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface-subtle px-3.5 py-2 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:opacity-60 disabled:cursor-not-allowed motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <Archive size={15} strokeWidth={2} aria-hidden="true" />
-              <span>Archive</span>
+              <span>{pendingAction === 'archive' ? 'Archiving…' : 'Archive'}</span>
             </button>
           </>
         )}

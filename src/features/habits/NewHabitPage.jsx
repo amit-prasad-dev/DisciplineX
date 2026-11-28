@@ -1,11 +1,31 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useHabits } from '../../hooks/useHabits.js'
 import HabitForm from './components/HabitForm.jsx'
+import {
+  HabitsLoadErrorBlock,
+  HabitsLoadingBlock,
+  HabitsUnconfirmedBanner,
+} from './components/HabitsStatusBlocks.jsx'
 import { toCreateHabitInput } from './habitFormUtils.js'
+import { getHabitsViewState } from './habitsViewState.js'
 
 export default function NewHabitPage() {
-  const { createHabit } = useHabits()
+  const {
+    status,
+    loadError,
+    slowLoad,
+    unconfirmedMessage,
+    retry,
+    createHabit,
+  } = useHabits()
   const navigate = useNavigate()
+
+  const viewState = getHabitsViewState({ status })
+  const [enteredReady, setEnteredReady] = useState(() => viewState === 'ready')
+  if (!enteredReady && viewState === 'ready') {
+    setEnteredReady(true)
+  }
 
   const handleCreate = (formValues) =>
     createHabit(toCreateHabitInput(formValues))
@@ -23,7 +43,24 @@ export default function NewHabitPage() {
         </p>
       </div>
 
-      <HabitForm mode="create" onSubmit={handleCreate} onSuccess={handleSuccess} />
+      {viewState === 'loading' ? (
+        <HabitsLoadingBlock slowLoad={slowLoad} />
+      ) : viewState === 'loadError' ? (
+        <HabitsLoadErrorBlock loadError={loadError} onRetry={retry} />
+      ) : viewState === 'unconfirmed' && !enteredReady ? (
+        <HabitsUnconfirmedBanner message={unconfirmedMessage} />
+      ) : (
+        <>
+          {viewState === 'unconfirmed' ? (
+            <HabitsUnconfirmedBanner message={unconfirmedMessage} />
+          ) : null}
+          <HabitForm
+            mode="create"
+            onSubmit={handleCreate}
+            onSuccess={handleSuccess}
+          />
+        </>
+      )}
     </div>
   )
 }

@@ -56,7 +56,7 @@ function SignInRouteGuard() {
 }
 
 function ProtectedRouteGuard() {
-  const { status, configError } = useAuth()
+  const { status, configError, user } = useAuth()
   const location = useLocation()
   const decision = getAuthGateDecision({ status, isSignInRoute: false })
 
@@ -83,9 +83,9 @@ function ProtectedRouteGuard() {
   }
 
   // Mount HabitsProvider only inside the allowed (ownerSignedIn) branch so signing out
-  // or leaving ownerSignedIn unmounts it and discards in-memory habits automatically.
+  // or leaving ownerSignedIn unmounts it and stops the habits controller automatically.
   return (
-    <HabitsProvider>
+    <HabitsProvider uid={user.uid} key={user.uid}>
       <AppShell />
     </HabitsProvider>
   )

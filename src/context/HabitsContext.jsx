@@ -1,152 +1,63 @@
-// TEMPORARY IN-MEMORY HABITS STORE:
-// Habits live in memory only during Phase 3 and Phase 4 (no localStorage or
-// IndexedDB persistence). Real Firestore persistence arrives in Phase 5.
-
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import {
-  archiveHabitInList,
-  createHabitInList,
+  createHabitsController,
   findHabitById,
-  generateHabitId,
-  restoreHabitInList,
   selectActiveHabits,
   selectArchivedHabits,
-  updateHabitDatesInList,
-  updateHabitDetailsInList,
-  updateHabitInList,
-  updateHabitScheduleOrTargetInList,
-} from '../features/habits/habitStoreLogic.js'
-import { DEFAULT_TIME_ZONE, getLocalDateKey } from '../utils/date.js'
+} from '../features/habits/habitsController.js'
+import { getHabitsService } from '../services/habits/habitsServiceInstance.js'
 import { HabitsContext } from './habitsContext.js'
 
-const defaultGenerateId = () => generateHabitId()
-const defaultGetNow = () => new Date().toISOString()
-const defaultGetTodayKey = () => getLocalDateKey(new Date(), DEFAULT_TIME_ZONE)
-
-export function HabitsProvider({
-  children,
-  generateId = defaultGenerateId,
-  getNow = defaultGetNow,
-  getTodayKey = defaultGetTodayKey,
-}) {
-  const [habits, setHabits] = useState([])
-  const habitsRef = useRef(habits)
-
-  const runListAction = useCallback((computeTransition) => {
-    const currentHabits = habitsRef.current
-    const result = computeTransition(currentHabits)
-    if (!result.ok) {
-      return { ok: false, errors: result.errors }
-    }
-    if (result.habits !== currentHabits) {
-      habitsRef.current = result.habits
-      setHabits(result.habits)
-    }
-    return { ok: true, habit: result.habit }
-  }, [])
-
-  const createHabit = useCallback(
-    (input) =>
-      runListAction((list) =>
-        createHabitInList(list, input, {
-          id: generateId(),
-          now: getNow(),
-        }),
-      ),
-    [runListAction, generateId, getNow],
+/**
+ * Thin React provider binding the async Firestore habits controller to context.
+ */
+export function HabitsProvider({ uid, children }) {
+  const [controller] = useState(() =>
+    createHabitsController({ uid, service: getHabitsService() }),
+  )
+  const snapshot = useSyncExternalStore(
+    controller.subscribe,
+    controller.getState,
   )
 
-  const updateHabitDetails = useCallback(
-    (habitId, changes) =>
-      runListAction((list) =>
-        updateHabitDetailsInList(list, habitId, changes, { now: getNow() }),
-      ),
-    [runListAction, getNow],
-  )
+  useEffect(() => {
+    controller.start()
+    return () => controller.stop()
+  }, [controller])
 
-  const updateHabitScheduleOrTarget = useCallback(
-    (habitId, changes) =>
-      runListAction((list) =>
-        updateHabitScheduleOrTargetInList(list, habitId, changes, {
-          todayKey: getTodayKey(),
-          now: getNow(),
-        }),
-      ),
-    [runListAction, getTodayKey, getNow],
+  const activeHabits = useMemo(() => selectActiveHabits(snapshot), [snapshot])
+  const archivedHabits = useMemo(
+    () => selectArchivedHabits(snapshot),
+    [snapshot],
   )
-
-  const updateHabitDates = useCallback(
-    (habitId, changes) =>
-      runListAction((list) =>
-        updateHabitDatesInList(list, habitId, changes, {
-          todayKey: getTodayKey(),
-          now: getNow(),
-        }),
-      ),
-    [runListAction, getTodayKey, getNow],
-  )
-
-  const updateHabit = useCallback(
-    (habitId, changes) =>
-      runListAction((list) =>
-        updateHabitInList(list, habitId, changes, {
-          todayKey: getTodayKey(),
-          now: getNow(),
-        }),
-      ),
-    [runListAction, getTodayKey, getNow],
-  )
-
-  const archiveHabit = useCallback(
-    (habitId) =>
-      runListAction((list) =>
-        archiveHabitInList(list, habitId, { now: getNow() }),
-      ),
-    [runListAction, getNow],
-  )
-
-  const restoreHabit = useCallback(
-    (habitId) =>
-      runListAction((list) =>
-        restoreHabitInList(list, habitId, { now: getNow() }),
-      ),
-    [runListAction, getNow],
-  )
-
-  const activeHabits = useMemo(() => selectActiveHabits(habits), [habits])
-  const archivedHabits = useMemo(() => selectArchivedHabits(habits), [habits])
   const getHabitById = useCallback(
-    (habitId) => findHabitById(habitsRef.current, habitId),
-    [],
+    (habitId) =>
+      snapshot.status === 'ready' ? findHabitById(snapshot, habitId) : null,
+    [snapshot],
   )
 
   const value = useMemo(
     () => ({
-      habits,
+      status: snapshot.status,
+      habits: snapshot.habits,
       activeHabits,
       archivedHabits,
+      invalid: snapshot.invalid,
+      loadError: snapshot.loadError,
+      slowLoad: snapshot.slowLoad,
+      isSaving: snapshot.isSaving,
+      unconfirmedMessage: snapshot.unconfirmedMessage,
       getHabitById,
-      createHabit,
-      updateHabitDetails,
-      updateHabitScheduleOrTarget,
-      updateHabitDates,
-      updateHabit,
-      archiveHabit,
-      restoreHabit,
+      retry: controller.retry,
+      createHabit: controller.createHabit,
+      updateHabit: controller.updateHabit,
+      updateHabitDetails: controller.updateHabitDetails,
+      updateHabitScheduleOrTarget: controller.updateHabitScheduleOrTarget,
+      updateHabitDates: controller.updateHabitDates,
+      archiveHabit: controller.archiveHabit,
+      restoreHabit: controller.restoreHabit,
     }),
-    [
-      habits,
-      activeHabits,
-      archivedHabits,
-      getHabitById,
-      createHabit,
-      updateHabitDetails,
-      updateHabitScheduleOrTarget,
-      updateHabitDates,
-      updateHabit,
-      archiveHabit,
-      restoreHabit,
-    ],
+    [snapshot, activeHabits, archivedHabits, getHabitById, controller],
   )
 
   return (
