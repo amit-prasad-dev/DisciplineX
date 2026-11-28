@@ -58,6 +58,12 @@ npm run build    # Build production bundle to dist/
 npm run preview  # Preview the production build locally
 ```
 
+### Environment setup
+
+1. Copy `.env.example` to `.env.local`.
+2. Fill in the `VITE_FIREBASE_*` values from your Firebase Console Web App settings (and `VITE_OWNER_UID` after your first Google sign-in).
+3. Never commit `.env.local` or any real `.env` file.
+
 ## Product principles
 
 1. Correct historical data is more important than impressive-looking statistics.
