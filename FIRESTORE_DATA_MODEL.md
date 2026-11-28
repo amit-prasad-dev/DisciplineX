@@ -30,9 +30,9 @@ Created on first owner sign-in if missing via a Firestore `runTransaction` (read
 
 Allowed fields (`firestore.rules` rejects extra keys and validates `schemaVersion == 1`):
 - `schemaVersion`: number (`1`)
-- `timeZone`: string (non-empty IANA time-zone identifier, default `Asia/Kolkata`)
-- `createdAt`: ISO 8601 string (immutable after creation; audit only)
-- `updatedAt`: ISO 8601 string (audit only)
+- `timeZone`: string (non-empty IANA time-zone identifier, `1–64` chars in `firestore.rules`, default `Asia/Kolkata`)
+- `createdAt`: ISO 8601 string (`YYYY-MM-DDTHH:mm:ss.sssZ`, immutable after creation; audit only)
+- `updatedAt`: ISO 8601 string (`YYYY-MM-DDTHH:mm:ss.sssZ`; audit only)
 
 ## 4. Habit document
 
@@ -42,27 +42,27 @@ Habit IDs are generated client-side via Firestore `doc(collection(...)).id` (no 
 
 When loaded once via `getDocs`, valid habits are sorted by `createdAt` ascending with ties broken by `id`. Malformed habit documents are not silently hidden or failed across the whole list, and the app never overwrites or auto-fixes them: valid habits still load, accompanied by a persistent neutral notice (`"N saved habit(s) couldn't be read and are hidden"`) listing document IDs only. A maximum of `100` habits per user (active plus archived) is enforced in pure store logic (`createHabitInList`); because Firestore rules cannot count documents, this cap is app-side only.
 
-Allowed fields (`firestore.rules` rejects extra keys and validates `schemaVersion == 1`):
+Allowed fields (`firestore.rules` rejects extra keys, mirrors `HABIT_FIELD_LIMITS` bounds, and validates `schemaVersion == 1`):
 - `schemaVersion`: number (`1`)
-- `name`: string, required (1–80 chars)
-- `description`: string (0–300 chars)
+- `name`: string, required (non-empty, trimmed, `1–80` chars)
+- `description`: non-empty string (`1–300` chars) or `null` (canonical stored form for none is `null`, never `""`)
 - `category`: enum `'Learning' | 'Fitness' | 'Personal' | 'Health'`
-- `icon`: string (0–40 chars, icon key only)
-- `targetTimeLabel`: string (0–40 chars) or `null` (display-only; meaningful only when latest version `targetType` is `'boolean'`)
+- `icon`: non-empty string (`1–40` chars, icon key only) or `null` (canonical stored form for none is `null`, never `""`)
+- `targetTimeLabel`: non-empty string (`1–40` chars) or `null` (canonical stored form for none is `null`, never `""`; display-only and meaningful only when latest version `targetType` is `'boolean'`)
 - `startDate`: string (`YYYY-MM-DD`; editable only while in the future; moving it moves the initial version's `effectiveFrom`)
 - `endDate`: string (`YYYY-MM-DD`) or `null`
-- `status`: enum `'active' | 'archived'`
+- `status`: enum `'active' | 'archived'` (must be `'active'` on create)
 - `versions`: non-empty array (`1 <= versions.size() <= 400` in rules) of effective-dated schedule/target versions ordered by `effectiveFrom` ascending, each containing:
   - `effectiveFrom`: string (`YYYY-MM-DD`; initial version matches `startDate`)
   - `frequencyType`: `daily | selected_weekdays`
-  - `scheduledWeekdays`: array of `'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'` (week starts Monday; stored via one centralized ordered constant and `Date.getDay()` conversion helper)
+  - `scheduledWeekdays`: array of `'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'` (week starts Monday; stored via one centralized ordered constant and `Date.getDay()` conversion helper; empty when `daily`)
   - `targetType`: `boolean | numeric`
-  - `targetValue`: number or null (required when `targetType` is `numeric`)
-  - `targetUnit`: string (1–30 chars) or `null`
-- `createdAt`: ISO 8601 string (immutable after creation; audit only)
-- `updatedAt`: ISO 8601 string (audit only)
+  - `targetValue`: number (`> 0`) or `null` (required when `targetType` is `numeric`; `null` when `boolean`)
+  - `targetUnit`: non-empty string (`1–30` chars) or `null` (canonical stored form for none is `null`, never `""`; `null` when `boolean`)
+- `createdAt`: ISO 8601 string (`YYYY-MM-DDTHH:mm:ss.sssZ`, immutable after creation; equal to `updatedAt` on create; audit only)
+- `updatedAt`: ISO 8601 string (`YYYY-MM-DDTHH:mm:ss.sssZ`; non-decreasing on update; audit only)
 
-Note: Firestore Security Rules validate top-level habit keys, types, lengths, enums, date-key format, and `1 <= versions.size() <= 400`, but cannot iterate over every element inside `versions`; per-version item validation remains enforced by the app/domain layer.
+Note: Firestore Security Rules mirror these bounds (`80`, `300`, `40`, `40`, `30`, `1–64` on `timeZone`, `1 <= versions.size() <= 400`), validate top-level habit keys, types, enums, `YYYY-MM-DD` / ISO shapes, and validate `versions[0]` and `versions[versions.size() - 1]`. Rules cannot loop over middle elements of `versions`, check Monday-first ordering, verify real calendar date validity (e.g. `"2026-13-45"` matches shape), check IANA time-zone membership, or count documents for the `100`-habit cap; those checks remain enforced by the app/domain layer.
 
 Changing `name`, `description`, `category`, `icon`, or `targetTimeLabel` updates metadata in place without creating a new version. Changing schedule (`frequencyType`, `scheduledWeekdays`) or target (`targetType`, `targetValue`, `targetUnit`) uses `effectiveFrom` equal to today's local date key (`YYYY-MM-DD`; no backdating or future `effectiveFrom` in MVP); switching `targetType` from `boolean` to `numeric` clears `targetTimeLabel` to `null`. If `effectiveFrom` matches the current latest version's `effectiveFrom`, or if `startDate` is still in the future, that version is replaced in place; otherwise a new version is appended. Today's evaluation uses the new version (today is still open), while past dates evaluate against the latest version where `effectiveFrom <= date` without rewriting prior versions or recalculating historical logs.
 

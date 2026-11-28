@@ -17,16 +17,154 @@ service cloud.firestore {
         && request.auth.uid == ownerUid();
     }
 
-    // Phase 4 scope: ownership and allowlist checks only.
-    // Per-collection schema and data-validation rules come in Phase 5 with the services.
-    match /users/{uid}/profile/{docId} {
-      allow read, write: if isAuthorizedOwner(uid);
+    // Checks YYYY-MM-DD shape only (values like "2026-13-45" pass here);
+    // real calendar validity is checked by the app.
+    function isDateKey(val) {
+      return val is string && val.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
     }
 
+    function isIsoUtcTimestamp(val) {
+      return val is string
+        && val.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$');
+    }
+
+    function isOptionalString(val, maxLen) {
+      return val == null || (val is string && val.size() >= 1 && val.size() <= maxLen);
+    }
+
+    function validVersion(v) {
+      return v is map
+        && v.keys().hasOnly([
+          'effectiveFrom',
+          'frequencyType',
+          'scheduledWeekdays',
+          'targetType',
+          'targetValue',
+          'targetUnit'
+        ])
+        && v.keys().hasAll([
+          'effectiveFrom',
+          'frequencyType',
+          'scheduledWeekdays',
+          'targetType',
+          'targetValue',
+          'targetUnit'
+        ])
+        && isDateKey(v.effectiveFrom)
+        && v.frequencyType in ['daily', 'selected_weekdays']
+        && v.scheduledWeekdays is list
+        && v.scheduledWeekdays.size() <= 7
+        // Monday-first ordering of scheduledWeekdays stays an app-side check.
+        && v.scheduledWeekdays.hasOnly(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])
+        && v.scheduledWeekdays.toSet().size() == v.scheduledWeekdays.size()
+        && (v.frequencyType != 'daily' || v.scheduledWeekdays.size() == 0)
+        && (v.frequencyType != 'selected_weekdays' || v.scheduledWeekdays.size() >= 1)
+        && v.targetType in ['boolean', 'numeric']
+        && (
+          (v.targetType == 'boolean' && v.targetValue == null && v.targetUnit == null)
+          || (
+            v.targetType == 'numeric'
+            && v.targetValue is number
+            && v.targetValue > 0
+            && isOptionalString(v.targetUnit, 30)
+          )
+        );
+    }
+
+    function validHabitDocument(data) {
+      return data.keys().hasOnly([
+          'schemaVersion',
+          'name',
+          'description',
+          'category',
+          'icon',
+          'targetTimeLabel',
+          'startDate',
+          'endDate',
+          'status',
+          'versions',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'schemaVersion',
+          'name',
+          'description',
+          'category',
+          'icon',
+          'targetTimeLabel',
+          'startDate',
+          'endDate',
+          'status',
+          'versions',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.schemaVersion is int
+        && data.schemaVersion == 1
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 80
+        && isOptionalString(data.description, 300)
+        && data.category in ['Learning', 'Fitness', 'Personal', 'Health']
+        && isOptionalString(data.icon, 40)
+        && isOptionalString(data.targetTimeLabel, 40)
+        && isDateKey(data.startDate)
+        && (data.endDate == null || (isDateKey(data.endDate) && data.endDate >= data.startDate))
+        && data.status in ['active', 'archived']
+        && isIsoUtcTimestamp(data.createdAt)
+        && isIsoUtcTimestamp(data.updatedAt)
+        && data.versions is list
+        && data.versions.size() >= 1
+        && data.versions.size() <= 400
+        && data.versions[0].effectiveFrom == data.startDate
+        // Firestore rules cannot loop over list elements; middle elements of versions
+        // are validated only by the app.
+        && validVersion(data.versions[0])
+        && validVersion(data.versions[data.versions.size() - 1]);
+    }
+
+    function validProfileDocument(data) {
+      return data.keys().hasOnly(['schemaVersion', 'timeZone', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['schemaVersion', 'timeZone', 'createdAt', 'updatedAt'])
+        && data.schemaVersion is int
+        && data.schemaVersion == 1
+        // Firestore rules check length/non-empty only; full IANA validity is checked by the app.
+        && data.timeZone is string
+        && data.timeZone.size() >= 1
+        && data.timeZone.size() <= 64
+        && isIsoUtcTimestamp(data.createdAt)
+        && isIsoUtcTimestamp(data.updatedAt);
+    }
+
+    // Profile is restricted to users/{uid}/profile/main only; deletes stay denied.
+    match /users/{uid}/profile/main {
+      allow read: if isAuthorizedOwner(uid);
+      allow create: if isAuthorizedOwner(uid)
+        && validProfileDocument(request.resource.data);
+      allow update: if isAuthorizedOwner(uid)
+        && validProfileDocument(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt >= resource.data.updatedAt;
+    }
+
+    // Habits are archived, never deleted; there is no allow delete rule.
     match /users/{uid}/habits/{habitId} {
-      allow read, write: if isAuthorizedOwner(uid);
+      allow read: if isAuthorizedOwner(uid);
+      allow create: if isAuthorizedOwner(uid)
+        && validHabitDocument(request.resource.data)
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt == request.resource.data.updatedAt;
+      allow update: if isAuthorizedOwner(uid)
+        && validHabitDocument(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt >= resource.data.updatedAt
+        && request.resource.data.versions.size() >= resource.data.versions.size()
+        && (resource.data.versions.size() < 2
+          || request.resource.data.versions[0] == resource.data.versions[0]);
     }
 
+    // Phase 6/7 will add schema validation for dailyLogs and challenges; the app does not write here yet.
     match /users/{uid}/dailyLogs/{logId} {
       allow read, write: if isAuthorizedOwner(uid);
     }
@@ -35,8 +173,8 @@ service cloud.firestore {
       allow read, write: if isAuthorizedOwner(uid);
     }
 
-    // Default deny everything else (root collections, unlisted user subcollections,
-    // nested subcollections, other users' paths, and top-level users/{uid} documents).
+    // Default deny everything else (other profile doc ids, unlisted/nested subcollections,
+    // habit/profile deletes, root collections, other users' paths, top-level users/{uid}).
     match /{document=**} {
       allow read, write: if false;
     }

@@ -38,7 +38,7 @@ Where practical, use Firebase Emulator Suite (via a separate `npm run test:rules
 - Authentication-dependent operations.
 - Pure Firestore document mapping, malformed-document isolation, 100-habit cap, and async store/late-response unit tests.
 - Firestore reads and writes.
-- Security Rules tests (`profile` & `habits` schema validation, `schemaVersion == 1`, `1 <= versions.size() <= 400`, and habit deletion denial; Phase 5 updates Phase 4 dummy-payload tests to valid schemas).
+- Security Rules tests (`profile/main`-only & `habits` schema validation, `schemaVersion == 1`, boundary `at limit` / `limit + 1` checks synced from `HABIT_FIELD_LIMITS`, app-generated fixtures verified against `habitToDocument` / `documentToHabit`, `1 <= versions.size() <= 400`, malformed first/last version & weekday checks, monotonic `updatedAt`/immutable `createdAt`/`versions[0]` update checks, and habit/profile deletion denial).
 - Invalid document rejection.
 - Non-allowlisted UID rejection (temporary MVP owner allowlist).
 - Cross-user access denial.

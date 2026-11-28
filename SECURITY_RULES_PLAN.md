@@ -21,16 +21,16 @@ A user must never be able to supply another UID and read or modify that user's d
 
 ## 3. Validation
 
-Rules should validate, as appropriate:
-- Required fields and allowed field names (`schemaVersion == 1`; habit documents do not include an `id` field).
-- Allowed enum values (`category`, `status`).
-- Field types (`YYYY-MM-DD` date-key format where applicable).
-- String and array size limits (`1 <= versions.size() <= 400` on habits; note rules cannot iterate over every element of `versions`, so per-version item validation stays in the app/domain layer, and the `100`-habit-per-user cap is app-side only since rules cannot count documents).
-- Numeric values and positive durations.
-- Immutable ownership/path identity (`createdAt` immutable after creation).
-- Client-generated ISO 8601 `createdAt`/`updatedAt` audit strings.
+Rules enforce for `users/{uid}/profile/main` (other `profile` doc IDs denied) and `users/{uid}/habits/{habitId}`:
+- Exact allowed keys (`hasOnly` and `hasAll`): `schemaVersion == 1`; habit documents do not include an `id` field.
+- Allowed enum values (`category`: `'Learning' | 'Fitness' | 'Personal' | 'Health'`; `status`: `'active' | 'archived'`, with `'active'` required on habit create).
+- Field types and regex shapes (`YYYY-MM-DD` shape for `startDate`/`endDate`/`effectiveFrom`, and `YYYY-MM-DDTHH:mm:ss.sssZ` shape for `createdAt`/`updatedAt`).
+- String and list bounds mirroring `HABIT_FIELD_LIMITS`: `name` (`1–80`), `description` (`null` or `1–300`), `icon` (`null` or `1–40`), `targetTimeLabel` (`null` or `1–40`), `targetUnit` (`null` or `1–30`), profile `timeZone` (`1–64`), and `1 <= versions.size() <= 400`.
+- First and last `versions` items validated via `validVersion`: exact keys, `frequencyType`/`targetType` enums, `scheduledWeekdays` (`<= 7`, unique via `toSet().size()`, allowed `'mon'..'sun'` keys, empty when `daily`, non-empty when `selected_weekdays`), `targetValue` (`null` for `boolean`, `> 0` number for `numeric`), and `versions[0].effectiveFrom == startDate`.
+- Immutable/monotonic audit & version checks: `createdAt == updatedAt` on habit create; `createdAt` unchanged and `updatedAt` non-decreasing on habit and profile updates; `versions.size()` non-shrinking and `versions[0]` unchanged once `resource.data.versions.size() >= 2`.
+- Known rules limits (enforced in app/domain layer instead): `isDateKey` checks shape only (`"2026-13-45"` passes shape checks, while the app checks real calendar validity), middle `versions` elements cannot be iterated in rules, Monday-first `scheduledWeekdays` ordering stays app-side, IANA `timeZone` validity is checked by the app, the `100`-habit-per-user cap is app-side only (rules cannot count documents), and `dailyLogs`/`challenges` remain owner-only without schema validation until Phases 6–7.
 
-Habit deletion is denied in `firestore.rules` (`allow delete: if false;` — habits are archived, never deleted; documents created during development can only be deleted in the Firebase Console). Phase 5 rules validation and emulator tests must be updated and deployed before the app begins writing to Firestore.
+Habit and profile deletion is denied in `firestore.rules` (no `allow delete` rule — habits are archived, never deleted; documents created during development can only be deleted in the Firebase Console). Phase 5 rules validation and emulator tests must be updated and deployed before the app begins writing to Firestore.
 
 Client-side validation improves usability but does not replace server-enforced rules.
 
