@@ -3,7 +3,7 @@ import path from 'node:path'
 import { deleteApp, getApps } from 'firebase/app'
 import { afterEach, describe, expect, it } from 'vitest'
 import { getFirebaseApp } from './firebaseApp.js'
-import { getFirebaseConfig } from './firebaseConfig.js'
+import { getFirebaseConfig, getOwnerUid } from './firebaseConfig.js'
 
 const FAKE_ENV = {
   VITE_FIREBASE_API_KEY: 'test-api-key',
@@ -63,12 +63,12 @@ describe('getFirebaseConfig', () => {
   it('accepts real-looking values that merely contain "todo" or "xxx" in the middle', () => {
     const envWithSubstrings = {
       ...FAKE_ENV,
-      VITE_FIREBASE_API_KEY: 'AIzaSyTestKeytodo999',
+      VITE_FIREBASE_API_KEY: 'fake-looking-key-1234todo5678',
       VITE_FIREBASE_PROJECT_ID: 'disciplinex-xxx-prod',
     }
 
     const config = getFirebaseConfig(envWithSubstrings)
-    expect(config.apiKey).toBe('AIzaSyTestKeytodo999')
+    expect(config.apiKey).toBe('fake-looking-key-1234todo5678')
     expect(config.projectId).toBe('disciplinex-xxx-prod')
   })
 
@@ -146,5 +146,29 @@ describe('getFirebaseApp', () => {
 
     expect(app1).toBe(app2)
     expect(getApps()).toHaveLength(1)
+  })
+})
+
+describe('getOwnerUid', () => {
+  it('returns null when VITE_OWNER_UID is missing, empty, or a placeholder', () => {
+    expect(getOwnerUid({})).toBeNull()
+    expect(getOwnerUid({ VITE_OWNER_UID: '' })).toBeNull()
+    expect(getOwnerUid({ VITE_OWNER_UID: '   ' })).toBeNull()
+    expect(getOwnerUid({ VITE_OWNER_UID: 'your-owner-uid' })).toBeNull()
+    expect(getOwnerUid({ VITE_OWNER_UID: '<owner-uid>' })).toBeNull()
+    expect(getOwnerUid({ VITE_OWNER_UID: 'todo' })).toBeNull()
+  })
+
+  it('treats VITE_OWNER_UID in .env.example as missing (null)', () => {
+    const envExamplePath = path.resolve(process.cwd(), '.env.example')
+    const exampleEnv = parseEnvExample(envExamplePath)
+    expect(getOwnerUid(exampleEnv)).toBeNull()
+  })
+
+  it('returns the trimmed UID and accepts substrings like todo or xxx inside a real UID', () => {
+    expect(getOwnerUid({ VITE_OWNER_UID: '  uid-abc-123  ' })).toBe('uid-abc-123')
+    expect(getOwnerUid({ VITE_OWNER_UID: 'owner_todo_xxx_99' })).toBe(
+      'owner_todo_xxx_99',
+    )
   })
 })

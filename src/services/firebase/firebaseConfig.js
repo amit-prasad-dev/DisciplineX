@@ -66,3 +66,16 @@ export function getFirebaseConfig(env) {
 
   return config
 }
+
+/**
+ * Extract the optional personal-use owner UID from an env-like object.
+ * Returns the trimmed UID, or null when missing, empty, or a placeholder.
+ */
+export function getOwnerUid(env) {
+  const source = env && typeof env === 'object' ? env : {}
+  const rawValue = source.VITE_OWNER_UID
+  if (isPlaceholderValue(rawValue)) {
+    return null
+  }
+  return rawValue.trim()
+}
