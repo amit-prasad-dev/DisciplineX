@@ -8,7 +8,7 @@ service cloud.firestore {
     // owner user is ever deleted and re-created, and remove or replace this
     // allowlist before a public multi-user release.
     function ownerUid() {
-      return "REPLACE_WITH_OWNER_UID";
+      return "Pug93uZz16QD2Z6u13QeLRsEl5l1";
     }
 
     function isAuthorizedOwner(uid) {
