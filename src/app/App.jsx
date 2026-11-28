@@ -1,16 +1,16 @@
 import { BrowserRouter } from 'react-router'
-import { HabitsProvider } from '../context/HabitsContext.jsx'
+import { AuthProvider } from '../context/AuthContext.jsx'
 import { ThemeProvider } from '../context/ThemeContext.jsx'
 import AppRouter from './router.jsx'
 
 export default function App() {
   return (
     <ThemeProvider>
-      <HabitsProvider>
+      <AuthProvider>
         <BrowserRouter>
           <AppRouter />
         </BrowserRouter>
-      </HabitsProvider>
+      </AuthProvider>
     </ThemeProvider>
   )
 }

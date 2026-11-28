@@ -1,11 +1,17 @@
-import { X } from 'lucide-react'
+import { LogOut, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import NavLinkList from './NavLinkList.jsx'
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-export default function MobileNavDrawer({ isOpen, onDismiss, onNavigate }) {
+export default function MobileNavDrawer({
+  isOpen,
+  onDismiss,
+  onNavigate,
+  accountLabel,
+  onSignOut,
+}) {
   const drawerRef = useRef(null)
   const closeButtonRef = useRef(null)
 
@@ -88,7 +94,25 @@ export default function MobileNavDrawer({ isOpen, onDismiss, onNavigate }) {
             <X size={18} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
-        <NavLinkList ariaLabel="Mobile navigation" onLinkClick={onNavigate} />
+        <div className="flex-1 overflow-y-auto">
+          <NavLinkList ariaLabel="Mobile navigation" onLinkClick={onNavigate} />
+        </div>
+        <div className="border-t border-border p-4 space-y-3">
+          <p
+            title={accountLabel}
+            className="truncate text-sm text-text-muted"
+          >
+            {accountLabel}
+          </p>
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface-subtle px-3 py-2 text-sm font-semibold text-text hover:bg-surface transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <LogOut size={16} strokeWidth={2} aria-hidden="true" />
+            <span>Sign out</span>
+          </button>
+        </div>
       </div>
     </div>
   )
