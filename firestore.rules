@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Temporary personal-use allowlist (see SECURITY_RULES_PLAN.md).
+    // This UID is not a secret; replace the placeholder value below with your
+    // Firebase Auth UID after your first Google sign-in. Update it if that
+    // owner user is ever deleted and re-created, and remove or replace this
+    // allowlist before a public multi-user release.
+    function ownerUid() {
+      return "REPLACE_WITH_OWNER_UID";
+    }
+
+    function isAuthorizedOwner(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && request.auth.uid == ownerUid();
+    }
+
+    // Phase 4 scope: ownership and allowlist checks only.
+    // Per-collection schema and data-validation rules come in Phase 5 with the services.
+    match /users/{uid}/profile/{docId} {
+      allow read, write: if isAuthorizedOwner(uid);
+    }
+
+    match /users/{uid}/habits/{habitId} {
+      allow read, write: if isAuthorizedOwner(uid);
+    }
+
+    match /users/{uid}/dailyLogs/{logId} {
+      allow read, write: if isAuthorizedOwner(uid);
+    }
+
+    match /users/{uid}/challenges/{challengeId} {
+      allow read, write: if isAuthorizedOwner(uid);
+    }
+
+    // Default deny everything else (root collections, unlisted user subcollections,
+    // nested subcollections, other users' paths, and top-level users/{uid} documents).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

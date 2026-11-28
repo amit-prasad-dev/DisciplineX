@@ -64,6 +64,20 @@ npm run preview  # Preview the production build locally
 2. Fill in the `VITE_FIREBASE_*` values from your Firebase Console Web App settings (and `VITE_OWNER_UID` after your first Google sign-in).
 3. Never commit `.env.local` or any real `.env` file.
 
+### Security rules
+
+Run Firestore Security Rules tests against the local Firestore emulator (requires Java and the local `firebase-tools` devDependency):
+
+```bash
+npm run test:rules
+```
+
+Before deploying rules, verify `firestore.rules` has a real owner UID instead of the placeholder:
+
+```bash
+npm run check:rules
+```
+
 ## Product principles
 
 1. Correct historical data is more important than impressive-looking statistics.
